@@ -29,6 +29,17 @@ body {
 .map-nav a:hover,
 .map-nav a[aria-current="page"] { background: #fff; color: #b42318; }
 .map-shell { padding: 18px 22px 28px; }
+.data-notice {
+  max-width: 1380px;
+  margin: 0 auto 14px;
+  border: 1px solid #ffd8a8;
+  border-radius: 8px;
+  background: #fff4e6;
+  color: #9a3412;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
 .map-tools {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) 150px 120px auto auto;

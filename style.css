@@ -62,6 +62,16 @@ body {
 
 /* ===== 容器 ===== */
 .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+.data-notice {
+  margin-bottom: 14px;
+  border: 1px solid #ffd8a8;
+  border-radius: 8px;
+  background: #fff4e6;
+  color: #9a3412;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
 
 /* ===== 工具栏 ===== */
 .toolbar {
