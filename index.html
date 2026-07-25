@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026湖北高考投档分数线查询</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-top">
+        <h1 class="site-title">湖北高考投档分数线查询</h1>
+        <nav class="site-nav" aria-label="工具导航">
+          <a href="index.html" aria-current="page">投档线</a>
+          <a href="yfd_chart.html">一分一段</a>
+          <a href="map.html">地图</a>
+        </nav>
+      </div>
+      <p class="site-sub" id="meta-text">数据加载中…</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 搜索 + 筛选 -->
+    <section class="toolbar">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="输入学校名称，如 清华、武大、华科…" autocomplete="off">
+        <button class="clear-btn" id="clear-search" title="清空" hidden>×</button>
+      </div>
+      <div class="filters">
+        <div class="filter-group">
+          <label>科类</label>
+          <select id="filter-subject">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>批次</label>
+          <select id="filter-batch">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>计划类别</label>
+          <select id="filter-plan">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>院校层次</label>
+          <select id="filter-level">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>所在地</label>
+          <select id="filter-region">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>办学性质</label>
+          <select id="filter-nature">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>特殊类型</label>
+          <select id="filter-special">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>年份</label>
+          <select id="filter-year">
+            <option value="">全部</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>分数 ≥</label>
+          <input type="number" id="filter-min-score" placeholder="不限" min="0" max="750">
+        </div>
+        <div class="filter-group">
+          <label>分数 ≤</label>
+          <input type="number" id="filter-max-score" placeholder="不限" min="0" max="750">
+        </div>
+        <button class="reset-btn" id="reset-filters">重置筛选</button>
+      </div>
+      <div class="result-info">
+        <span id="result-count">—</span>
+        <label class="only-has-data">
+          <input type="checkbox" id="only-has-data"> 只看有投档线的学校
+        </label>
+      </div>
+    </section>
+
+    <!-- 学校列表 -->
+    <section class="school-list" id="school-list">
+      <div class="loading-placeholder">数据加载中，请稍候…</div>
+    </section>
+
+    <!-- 回到顶部 -->
+    <button class="back-to-top" id="back-to-top" title="回到顶部" hidden>↑</button>
+  </main>
+
+  <footer class="site-footer">
+    <p>数据来源：<a href="https://m.wh.bendibao.com/edu/toudangfenshuxian/" target="_blank" rel="noopener">武汉本地宝</a>、<a href="https://zsxxw.e21.cn/" target="_blank" rel="noopener">湖北招生信息综合服务平台</a>、<a href="https://api.eol.cn/" target="_blank" rel="noopener">阳光高考</a> · 仅供志愿填报参考，请以官方公布为准</p>
+    <p class="footer-note">本科投档线为2026年数据，专科投档线为2025年参考数据；专科专业、计划数、学费来自阳光高考2025招生计划，学费单位为元/年。</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

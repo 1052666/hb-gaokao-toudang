@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>湖北高考院校地图</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="map.css">
+</head>
+<body>
+  <header class="map-header">
+    <div>
+      <h1>院校地图</h1>
+      <p id="map-meta">坐标数据加载中...</p>
+    </div>
+    <nav class="map-nav" aria-label="页面导航">
+      <a href="index.html">投档线</a>
+      <a href="yfd_chart.html">一分一段</a>
+      <a href="map.html" aria-current="page">地图</a>
+    </nav>
+  </header>
+
+  <main class="map-shell">
+    <section class="map-tools">
+      <div class="search-wrap">
+        <input id="school-search" type="search" placeholder="搜索学校，如 武汉大学、湖北职业技术学院">
+      </div>
+      <select id="level-filter" aria-label="院校层次">
+        <option value="">全部层次</option>
+      </select>
+      <select id="year-filter" aria-label="年份">
+        <option value="">全部年份</option>
+      </select>
+      <label class="check">
+        <input id="only-located" type="checkbox" checked>
+        只看已定位
+      </label>
+      <div class="mode-switch" role="group" aria-label="地图模式">
+        <button id="mode-2d" class="active" type="button">2D</button>
+        <button id="mode-3d" type="button">3D</button>
+      </div>
+    </section>
+
+    <section class="map-layout">
+      <div class="map-stage">
+        <div id="china-map"></div>
+      </div>
+      <aside class="info-panel" id="info-panel">
+        <div class="panel-empty">
+          <span>选择地图上的学校</span>
+          <small>右侧会显示学校资料、投档线、专业和地图跳转。</small>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="map.js"></script>
+</body>
+</html>
