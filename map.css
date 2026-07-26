@@ -203,6 +203,15 @@ body {
 }
 .jump-row a.secondary { background: #2563eb; }
 .record-list { display: grid; gap: 10px; }
+.record-loading {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+}
 .record {
   border: 1px solid #e5e7eb;
   border-radius: 8px;

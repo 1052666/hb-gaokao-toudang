@@ -273,6 +273,14 @@ body.modal-open { overflow: hidden; }
 .school-card.expanded .score-detail { display: block; }
 
 .score-cards { display: flex; flex-direction: column; gap: 10px; }
+.detail-loading {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-secondary);
+  padding: 18px;
+  text-align: center;
+}
 .detail-actions {
   position: sticky;
   top: 0;

@@ -6,6 +6,7 @@
   let filteredSchools = [];
   let renderedCount = 0;
   let activeSchoolId = null;
+  const chunkCache = new Map();
   const PAGE_SIZE = 40;
 
   const $ = (id) => document.getElementById(id);
@@ -37,7 +38,7 @@
 
   initContactModal();
 
-  fetch("data.json")
+  fetch("data_index.json")
     .then((r) => r.json())
     .then((d) => {
       DATA = d;
@@ -194,40 +195,20 @@
       if (nature && s.nature !== nature) continue;
       if (special && !(s.special || []).includes(special)) continue;
 
-      // 记录维度筛选
-      let records = s.records || [];
-      let keywordFilteredRecords = false;
-      if (kw && !schoolMatchesKeyword) {
-        records = records.filter((r) => recordMatchesKeyword(r, kw));
-        keywordFilteredRecords = true;
-      }
-      if (subj || batch || plan || year || minS !== null || maxS !== null) {
-        records = records.filter((r) => {
-          if (subj && r["科类"] !== subj) return false;
-          if (batch && r["类别"] !== batch && r["批次"] !== batch) return false;
-          if (plan && r["计划类别"] !== plan && r["类型"] !== plan) return false;
-          if (year && String(r["年份"] || "") !== year) return false;
-          const score = recordScore(r);
-          if (minS !== null && score < minS) return false;
-          if (maxS !== null && score > maxS) return false;
-          return true;
-        });
-      }
+      if (kw && !schoolMatchesKeyword && !summaryMatchesKeyword(s, kw)) continue;
+      if (!summaryMatchesFilters(s, { subj, batch, plan, year, minS, maxS })) continue;
+      if (onlyData && !s.record_count) continue;
 
-      if (kw && !schoolMatchesKeyword && records.length === 0) continue;
-      if (onlyData && records.length === 0) continue;
-
-      const hasRecFilter = keywordFilteredRecords || subj || batch || plan || year || minS !== null || maxS !== null;
       filteredSchools.push({
         ...s,
-        _matched: hasRecFilter ? records : s.records,
+        _matched: null,
       });
     }
 
     filteredSchools.sort((a, b) => {
-      const scoreDelta = maxScore(b._matched) - maxScore(a._matched);
+      const scoreDelta = summaryMaxScore(b) - summaryMaxScore(a);
       if (scoreDelta !== 0) return scoreDelta;
-      const planDelta = totalPlan(b._matched) - totalPlan(a._matched);
+      const planDelta = summaryPlanTotal(b) - summaryPlanTotal(a);
       if (planDelta !== 0) return planDelta;
       return (a.name || "").localeCompare(b.name || "", "zh-CN");
     });
@@ -246,6 +227,40 @@
     }
     renderMore();
     openSchoolFromHash();
+  }
+
+  function summaryMatchesKeyword(s, kw) {
+    return !kw || String(s.search_text || "").toLowerCase().includes(kw);
+  }
+
+  function facetIncludes(s, key, value) {
+    return !value || (((s.record_facets || {})[key] || []).includes(value));
+  }
+
+  function summaryMatchesFilters(s, filters) {
+    if (!facetIncludes(s, "科类", filters.subj)) return false;
+    if (!facetIncludes(s, "批次", filters.batch)) return false;
+    if (!facetIncludes(s, "计划类别", filters.plan)) return false;
+    if (!facetIncludes(s, "年份", filters.year)) return false;
+    if (filters.minS !== null && summaryMaxScore(s) < filters.minS) return false;
+    if (filters.maxS !== null && summaryMinScore(s) > filters.maxS) return false;
+    return true;
+  }
+
+  function summaryMaxScore(s) {
+    return Number.isFinite(Number(s.max_score)) ? Number(s.max_score) : -1;
+  }
+
+  function summaryMinScore(s) {
+    return Number.isFinite(Number(s.min_score)) ? Number(s.min_score) : -1;
+  }
+
+  function summaryPlanTotal(s) {
+    return parseInt(s.plan_total, 10) || 0;
+  }
+
+  function summaryMajorTotal(s) {
+    return parseInt(s.major_total, 10) || 0;
   }
 
   function maxScore(records) {
@@ -286,6 +301,49 @@
     ].join(" ").toLowerCase().includes(kw);
   }
 
+  function currentRecordFilters() {
+    return {
+      kw: searchInput.value.trim().toLowerCase(),
+      subj: filterSubject.value,
+      batch: filterBatch.value,
+      plan: filterPlan.value,
+      year: filterYear.value,
+      minS: filterMin.value ? parseInt(filterMin.value, 10) : null,
+      maxS: filterMax.value ? parseInt(filterMax.value, 10) : null,
+    };
+  }
+
+  function filterRecords(records, school, filters = currentRecordFilters()) {
+    const schoolText = `${school.name || ""} ${school.city || ""} ${school.region || ""} ${locationText(school)} ${locationAddress(school)}`.toLowerCase();
+    return (records || []).filter((r) => {
+      if (filters.kw && !schoolText.includes(filters.kw) && !recordMatchesKeyword(r, filters.kw)) return false;
+      if (filters.subj && r["科类"] !== filters.subj) return false;
+      if (filters.batch && r["类别"] !== filters.batch && r["批次"] !== filters.batch) return false;
+      if (filters.plan && r["计划类别"] !== filters.plan && r["类型"] !== filters.plan) return false;
+      if (filters.year && String(r["年份"] || "") !== filters.year) return false;
+      const score = recordScore(r);
+      if (filters.minS !== null && score < filters.minS) return false;
+      if (filters.maxS !== null && score > filters.maxS) return false;
+      return true;
+    });
+  }
+
+  async function loadSchoolRecords(school) {
+    if (!school.record_chunk) return school.records || [];
+    if (!chunkCache.has(school.record_chunk)) {
+      chunkCache.set(
+        school.record_chunk,
+        fetch(school.record_chunk).then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
+      );
+    }
+    const chunk = await chunkCache.get(school.record_chunk);
+    const found = (chunk.schools || []).find((s) => String(s.id) === String(school.id));
+    return found ? (found.records || []) : [];
+  }
+
   // ===== 渲染 =====
   function renderMore() {
     const end = Math.min(renderedCount + PAGE_SIZE, filteredSchools.length);
@@ -315,12 +373,12 @@
     const card = document.createElement("div");
     card.className = "school-card";
     card.dataset.schoolId = String(s.id);
-    const records = s._matched || [];
-    const hasData = records.length > 0;
-    const hi = maxScore(records);
-    const lo = minScore(records);
-    const planTotal = totalPlan(records);
-    const majorTotal = totalMajors(records);
+    const recordCount = s.record_count || 0;
+    const hasData = recordCount > 0;
+    const hi = summaryMaxScore(s);
+    const lo = summaryMinScore(s);
+    const planTotal = summaryPlanTotal(s);
+    const majorTotal = summaryMajorTotal(s);
     const hasScore = hi >= 0;
 
     card.innerHTML = `
@@ -340,11 +398,11 @@
           ${hasScore ? `
             <div class="school-stat"><span class="val">${hi}</span><span class="lbl">最高分</span></div>
             <div class="school-stat"><span class="val">${lo}</span><span class="lbl">最低分</span></div>
-            <div class="school-stat"><span class="val">${records.length}</span><span class="lbl">条记录</span></div>
+            <div class="school-stat"><span class="val">${recordCount}</span><span class="lbl">条记录</span></div>
           ` : hasData ? `
             <div class="school-stat"><span class="val">2026</span><span class="lbl">招生计划</span></div>
             <div class="school-stat"><span class="val">${planTotal || "—"}</span><span class="lbl">计划数</span></div>
-            <div class="school-stat"><span class="val">${majorTotal || records.length}</span><span class="lbl">专业/组</span></div>
+            <div class="school-stat"><span class="val">${majorTotal || recordCount}</span><span class="lbl">专业/组</span></div>
           ` : `<div class="school-stat no-data"><span class="val">—</span><span class="lbl">暂无数据</span></div>`}
         </div>
         <svg class="expand-arrow" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
@@ -360,18 +418,16 @@
       if (card.classList.contains("expanded")) {
         closeActiveDetail({ updateUrl: true });
       } else {
-        openSchoolCard(card, s, records, { updateUrl: true, scrollIntoView: false });
+        openSchoolCard(card, s, { updateUrl: true, scrollIntoView: false });
       }
     });
     return card;
   }
 
-  function openSchoolCard(card, s, records, options = {}) {
+  function openSchoolCard(card, s, options = {}) {
     closeActiveDetail({ updateUrl: false });
     const detail = card.querySelector(".score-detail");
-    if (detail.children.length === 0) {
-      detail.appendChild(renderScoreCards(records, s));
-    }
+    detail.innerHTML = '<div class="detail-loading">正在加载该校详细数据…</div>';
     card.classList.add("expanded");
     activeSchoolId = String(s.id);
     if (options.updateUrl) {
@@ -379,6 +435,15 @@
       if (location.hash !== hash) history.pushState({ schoolId: activeSchoolId }, "", hash);
     }
     if (options.scrollIntoView) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    loadSchoolRecords(s)
+      .then((records) => {
+        if (activeSchoolId !== String(s.id)) return;
+        detail.innerHTML = "";
+        detail.appendChild(renderScoreCards(filterRecords(records, s), s));
+      })
+      .catch((err) => {
+        detail.innerHTML = `<div class="empty-placeholder">详细数据加载失败：${escapeHtml(err.message)}</div>`;
+      });
   }
 
   function closeActiveDetail(options = {}) {
@@ -403,7 +468,7 @@
     if (index === -1) return;
     while (renderedCount <= index && renderedCount < filteredSchools.length) renderMore();
     const card = listEl.querySelector(`.school-card[data-school-id="${cssEscape(id)}"]`);
-    if (card) openSchoolCard(card, filteredSchools[index], filteredSchools[index]._matched || [], { updateUrl: false, scrollIntoView: true });
+    if (card) openSchoolCard(card, filteredSchools[index], { updateUrl: false, scrollIntoView: true });
   }
 
   function renderScoreCards(records, school) {

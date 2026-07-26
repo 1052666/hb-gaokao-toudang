@@ -19,9 +19,10 @@
   let map = null;
   let layer = null;
   let selectedId = null;
+  const chunkCache = new Map();
 
   Promise.all([
-    fetch("data.json").then((r) => r.json()),
+    fetch("data_index.json").then((r) => r.json()),
     fetch("school_locations.json").then((r) => r.json()),
   ]).then(([d, l]) => {
     data = d;
@@ -165,11 +166,8 @@
   }
 
   function renderPanel(s, loc) {
-    const records = s.records || [];
-    const scoreRecords = records.filter((r) => r["投档线"]);
-    const planRecords = records.filter((r) => r["数据类型"] === "2026招生计划");
-    const planTotal = planRecords.reduce((sum, r) => sum + (parseInt(r["计划数合计"], 10) || 0), 0);
-    const majorTotal = planRecords.reduce((sum, r) => sum + ((r["专业列表"] || []).length), 0);
+    const planTotal = parseInt(s.plan_total, 10) || 0;
+    const majorTotal = parseInt(s.major_total, 10) || 0;
     const located = loc.lat && loc.lon;
     const mapQuery = `${s.name} ${placeText(s, loc)}`;
     const amap = located
@@ -198,7 +196,7 @@
         <div class="stat-grid">
           <div class="stat"><b>${value(loc.max_score)}</b><span>最高分</span></div>
           <div class="stat"><b>${value(loc.min_score)}</b><span>最低分</span></div>
-          <div class="stat"><b>${s.level === "专科" ? planTotal || "-" : scoreRecords.length}</b><span>${s.level === "专科" ? "计划数" : "投档线"}</span></div>
+          <div class="stat"><b>${s.level === "专科" ? planTotal || "-" : s.record_count || "-"}</b><span>${s.level === "专科" ? "计划数" : "记录数"}</span></div>
           ${s.level === "专科" ? `<div class="stat"><b>${majorTotal || "-"}</b><span>专业项</span></div>` : ""}
         </div>
         <div class="jump-row">
@@ -206,9 +204,35 @@
           <a class="secondary" href="${baidu}" target="_blank" rel="noopener">百度地图</a>
         </div>
         ${!located ? `<div class="unlocated-note">该校暂未拿到可靠经纬度，地图按钮会按学校名称搜索。</div>` : ""}
-        <div class="record-list">${records.map(renderRecord).join("")}</div>
+        <div class="record-list" id="panel-records"><div class="record-loading">正在加载该校详细数据…</div></div>
       </div>
     `;
+    loadSchoolRecords(s)
+      .then((records) => {
+        if (String(selectedId) !== String(s.id)) return;
+        const list = $("panel-records");
+        if (list) list.innerHTML = records.map(renderRecord).join("") || '<div class="record-loading">该校暂无详细记录</div>';
+      })
+      .catch((err) => {
+        const list = $("panel-records");
+        if (list) list.innerHTML = `<div class="record-loading">详细数据加载失败：${escapeHtml(err.message)}</div>`;
+      });
+  }
+
+  async function loadSchoolRecords(school) {
+    if (!school.record_chunk) return school.records || [];
+    if (!chunkCache.has(school.record_chunk)) {
+      chunkCache.set(
+        school.record_chunk,
+        fetch(school.record_chunk).then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
+      );
+    }
+    const chunk = await chunkCache.get(school.record_chunk);
+    const found = (chunk.schools || []).find((s) => String(s.id) === String(school.id));
+    return found ? (found.records || []) : [];
   }
 
   function renderRecord(r) {
