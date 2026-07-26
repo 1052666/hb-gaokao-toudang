@@ -47,15 +47,17 @@
 
   function updateMeta() {
     const m = DATA.meta;
+    const z = m.zhuanke_2026;
     metaText.textContent =
-      `共 ${m.total_schools} 所学校 · ${m.total_records} 条投档线记录 · ` +
-      `本科2026年、专科2025年参考 · 数据来源：${m.source}`;
+      `共 ${m.total_schools} 所学校 · ${m.total_records} 条记录 · ` +
+      `本科2026投档线；专科含2026招生计划${z ? `（${z.schools_with_plan}所、${z.plan_rows}条专业计划）` : ""}和2025/2024参考投档线 · ` +
+      `数据来源：${m.source}`;
   }
 
   function normalizeRecords() {
     for (const s of DATA.schools) {
       for (const r of s.records || []) {
-        r["年份"] = String(s.year || r["年份"] || "");
+        r["年份"] = String(r["年份"] || s.year || "");
       }
     }
   }
@@ -77,7 +79,7 @@
     fillSelect(filterRegion, f["所在地"]);
     fillSelect(filterNature, f["办学性质"]);
     fillSelect(filterSpecial, f["特殊类型"]);
-    fillSelect(filterYear, f["年份"]);
+    fillSelect(filterYear, [...new Set([...(f["年份"] || []), ...collectRecordValues("年份")])].sort());
   }
 
   function collectRecordValues(key) {
@@ -114,40 +116,51 @@
     filteredSchools = [];
 
     for (const s of DATA.schools) {
-      // 学校名搜索
-      if (kw && !s.name.toLowerCase().includes(kw)) continue;
+      const schoolText = `${s.name || ""} ${s.city || ""} ${s.region || ""}`.toLowerCase();
+      const schoolMatchesKeyword = !kw || schoolText.includes(kw);
       // 学校维度筛选
       if (level && s.level !== level) continue;
       if (region && s.region !== region) continue;
       if (nature && s.nature !== nature) continue;
       if (special && !(s.special || []).includes(special)) continue;
-      if (year && String(s.year) !== year) continue;
 
-      // 投档线维度筛选
-      let records = s.records;
-      if (subj || batch || plan || minS !== null || maxS !== null) {
+      // 记录维度筛选
+      let records = s.records || [];
+      let keywordFilteredRecords = false;
+      if (kw && !schoolMatchesKeyword) {
+        records = records.filter((r) => recordMatchesKeyword(r, kw));
+        keywordFilteredRecords = true;
+      }
+      if (subj || batch || plan || year || minS !== null || maxS !== null) {
         records = records.filter((r) => {
           if (subj && r["科类"] !== subj) return false;
           if (batch && r["类别"] !== batch && r["批次"] !== batch) return false;
           if (plan && r["计划类别"] !== plan && r["类型"] !== plan) return false;
-          const score = parseInt(r["投档线"], 10);
-          if (isNaN(score)) return false;
+          if (year && String(r["年份"] || "") !== year) return false;
+          const score = recordScore(r);
           if (minS !== null && score < minS) return false;
           if (maxS !== null && score > maxS) return false;
           return true;
         });
       }
 
+      if (kw && !schoolMatchesKeyword && records.length === 0) continue;
       if (onlyData && records.length === 0) continue;
 
-      const hasRecFilter = subj || batch || plan || minS !== null || maxS !== null;
+      const hasRecFilter = keywordFilteredRecords || subj || batch || plan || year || minS !== null || maxS !== null;
       filteredSchools.push({
         ...s,
         _matched: hasRecFilter ? records : s.records,
       });
     }
 
-    filteredSchools.sort((a, b) => maxScore(b._matched) - maxScore(a._matched));
+    filteredSchools.sort((a, b) => {
+      const scoreDelta = maxScore(b._matched) - maxScore(a._matched);
+      if (scoreDelta !== 0) return scoreDelta;
+      const planDelta = totalPlan(b._matched) - totalPlan(a._matched);
+      if (planDelta !== 0) return planDelta;
+      return (a.name || "").localeCompare(b.name || "", "zh-CN");
+    });
     saveFilters();
     activeSchoolId = null;
 
@@ -168,18 +181,39 @@
   function maxScore(records) {
     let m = -1;
     for (const r of records) {
-      const s = parseInt(r["投档线"], 10);
-      if (!isNaN(s) && s > m) m = s;
+      const s = recordScore(r);
+      if (s >= 0 && s > m) m = s;
     }
     return m;
   }
   function minScore(records) {
     let m = 9999;
     for (const r of records) {
-      const s = parseInt(r["投档线"], 10);
-      if (!isNaN(s) && s < m) m = s;
+      const s = recordScore(r);
+      if (s >= 0 && s < m) m = s;
     }
     return m === 9999 ? -1 : m;
+  }
+
+  function recordScore(r) {
+    const score = parseInt(r && r["投档线"], 10);
+    return Number.isFinite(score) ? score : -1;
+  }
+
+  function totalPlan(records) {
+    return (records || []).reduce((sum, r) => sum + (parseInt(r["计划数合计"], 10) || 0), 0);
+  }
+
+  function totalMajors(records) {
+    return (records || []).reduce((sum, r) => sum + ((r["专业列表"] || []).length), 0);
+  }
+
+  function recordMatchesKeyword(r, kw) {
+    const majors = (r["专业列表"] || []).map((m) => `${m["专业名称"] || ""} ${m["专业说明"] || ""}`).join(" ");
+    return [
+      r["专业组名称"], r["专业组编号"], r["类型"], r["计划类别"],
+      r["科类"], r["批次"], r["类别"], r["选科要求"], majors,
+    ].join(" ").toLowerCase().includes(kw);
   }
 
   // ===== 渲染 =====
@@ -194,7 +228,12 @@
   function badgesHtml(s) {
     const tags = [];
     if (s.level) tags.push(`<span class="school-badge ${LEVEL_CLASS[s.level] || "lv-bk"}">${s.level}</span>`);
-    if (s.year) tags.push(`<span class="school-badge bg-year">${s.year}年${s.level === "专科" ? "参考" : ""}</span>`);
+    if (s.level === "专科" && (s.data_years || []).includes("2026")) {
+      tags.push(`<span class="school-badge bg-year">2026计划</span>`);
+    } else if (s.year) {
+      tags.push(`<span class="school-badge bg-year">${s.year}年</span>`);
+    }
+    if ((s.data_years || []).some((y) => y === "2024" || y === "2025")) tags.push(`<span class="school-badge bg-year">含往年参考</span>`);
     if (s.region) tags.push(`<span class="school-badge bg-region">${s.region}</span>`);
     if (s.nature) tags.push(`<span class="school-badge bg-nature">${s.nature}</span>`);
     (s.special || []).forEach((sp) => tags.push(`<span class="school-badge bg-special">${sp}</span>`));
@@ -207,8 +246,11 @@
     card.dataset.schoolId = String(s.id);
     const records = s._matched || [];
     const hasData = records.length > 0;
-    const hi = hasData ? maxScore(records) : -1;
-    const lo = hasData ? minScore(records) : -1;
+    const hi = maxScore(records);
+    const lo = minScore(records);
+    const planTotal = totalPlan(records);
+    const majorTotal = totalMajors(records);
+    const hasScore = hi >= 0;
 
     card.innerHTML = `
       <div class="school-header">
@@ -218,10 +260,14 @@
           <div class="school-badges">${badgesHtml(s)}</div>
         </div>
         <div class="school-stats">
-          ${hasData ? `
+          ${hasScore ? `
             <div class="school-stat"><span class="val">${hi}</span><span class="lbl">最高分</span></div>
             <div class="school-stat"><span class="val">${lo}</span><span class="lbl">最低分</span></div>
-            <div class="school-stat"><span class="val">${records.length}</span><span class="lbl">条投档线</span></div>
+            <div class="school-stat"><span class="val">${records.length}</span><span class="lbl">条记录</span></div>
+          ` : hasData ? `
+            <div class="school-stat"><span class="val">2026</span><span class="lbl">招生计划</span></div>
+            <div class="school-stat"><span class="val">${planTotal || "—"}</span><span class="lbl">计划数</span></div>
+            <div class="school-stat"><span class="val">${majorTotal || records.length}</span><span class="lbl">专业/组</span></div>
           ` : `<div class="school-stat no-data"><span class="val">—</span><span class="lbl">暂无数据</span></div>`}
         </div>
         <svg class="expand-arrow" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
@@ -290,20 +336,22 @@
     tools.className = "detail-actions";
     tools.innerHTML = `
       <button type="button" class="detail-back">返回列表</button>
-      <span>${escapeHtml(schoolName || "")} · ${records.length} 条投档线</span>
+      <span>${escapeHtml(schoolName || "")} · ${records.length} 条记录</span>
     `;
     tools.querySelector(".detail-back").addEventListener("click", () => closeActiveDetail({ updateUrl: true }));
     wrap.appendChild(tools);
     if (records.length === 0) {
       const empty = document.createElement("div");
       empty.style.cssText = "color:#8c8c8c;text-align:center;padding:20px;";
-      empty.textContent = "该学校暂无投档线数据";
+      empty.textContent = "该学校暂无匹配记录";
       wrap.appendChild(empty);
       return wrap;
     }
     const sorted = records.slice().sort((a, b) => {
-      const sa = (a["科类"] || "") + (a["类别"] || "") + (a["专业组编号"] || "");
-      const sb = (b["科类"] || "") + (b["类别"] || "") + (b["专业组编号"] || "");
+      const orderA = a["数据类型"] === "2026招生计划" ? "0" : "1";
+      const orderB = b["数据类型"] === "2026招生计划" ? "0" : "1";
+      const sa = orderA + (a["年份"] || "") + (a["科类"] || "") + (a["类别"] || "") + (a["专业组编号"] || "");
+      const sb = orderB + (b["年份"] || "") + (b["科类"] || "") + (b["类别"] || "") + (b["专业组编号"] || "");
       return sa.localeCompare(sb);
     });
     for (const r of sorted) wrap.appendChild(renderOneCard(r));
@@ -314,6 +362,8 @@
     const card = document.createElement("div");
     card.className = "score-card";
     const tagsHtml = [];
+    if (r["数据类型"]) tagsHtml.push(`<span class="score-tag t-remark">${r["数据类型"]}</span>`);
+    if (r["年份"]) tagsHtml.push(`<span class="score-tag t-group">${r["年份"]}</span>`);
     if (r["科类"]) tagsHtml.push(`<span class="score-tag t-subject">${r["科类"]}</span>`);
     if (r["批次"]) tagsHtml.push(`<span class="score-tag t-batch">${r["批次"]}</span>`);
     if (r["类别"]) tagsHtml.push(`<span class="score-tag t-batch">${r["类别"]}</span>`);
@@ -324,7 +374,7 @@
     if (r["备注"]) tagsHtml.push(`<span class="score-tag t-remark">${r["备注"]}</span>`);
 
     const scoreFields = ["语数之和", "语数最高", "外语", "首选科目", "再选最高", "再选次高", "文化成绩"];
-    const otherFields = ["年份", "院校代码", "志愿序号", "位次", "选科要求", "备注"];
+    const otherFields = ["计划数合计", "院校代码", "志愿序号", "位次", "控制线", "选科要求", "备注", "来源年份说明", "来源"];
     const scoreDetailHtml = scoreFields.filter((f) => r[f] !== undefined)
       .map((f) => `<div class="score-field"><span class="fl">${f}</span><span class="fv">${r[f]}</span></div>`).join("");
     const otherHtml = otherFields.filter((f) => r[f] !== undefined)
@@ -337,11 +387,19 @@
       return `<div class="score-field"><span class="fl">${m["专业名称"] || ""}</span><span class="fv">${[planText, feeText, feeYear].filter(Boolean).join(" · ")}</span></div>`;
     }).join("")}</div>` : "";
 
+    const hasScore = recordScore(r) >= 0;
+    const mainLabel = hasScore ? "投档线" : (r["数据类型"] === "2026招生计划" ? "招生计划" : "投档线");
+    const mainValue = hasScore
+      ? r["投档线"]
+      : (r["数据类型"] === "2026招生计划"
+        ? `${r["计划数合计"] || "—"}人`
+        : "暂无");
+
     card.innerHTML = `
       <div class="score-card-tags">${tagsHtml.join("")}</div>
       <div class="score-main-row">
-        <span class="score-label">投档线</span>
-        <span class="score-value">${r["投档线"] || "—"}</span>
+        <span class="score-label">${mainLabel}</span>
+        <span class="score-value">${mainValue}</span>
       </div>
       ${scoreDetailHtml ? `<div class="score-detail-grid"><div class="score-field section-title">成绩明细</div>${scoreDetailHtml}</div>` : ""}
       ${otherHtml ? `<div class="score-detail-grid"><div class="score-field section-title">其他信息</div>${otherHtml}</div>` : ""}
@@ -361,7 +419,7 @@
     );
   }
   function escapeHtml(s) {
-    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
   function cssEscape(s) {

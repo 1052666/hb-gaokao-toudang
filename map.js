@@ -43,7 +43,7 @@
 
   function initFilters() {
     const levels = [...new Set(data.schools.map((s) => s.level).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
-    const years = [...new Set(data.schools.map((s) => String(s.year)).filter(Boolean))].sort();
+    const years = [...new Set(data.schools.flatMap((s) => (s.data_years || [s.year]).map(String)).filter(Boolean))].sort();
     fill(levelEl, levels);
     fill(yearEl, years);
     [searchEl, levelEl, yearEl, onlyLocatedEl].forEach((el) => el.addEventListener("input", renderMarkers));
@@ -81,7 +81,7 @@
       if (!s) return false;
       if (kw && !s.name.toLowerCase().includes(kw)) return false;
       if (level && s.level !== level) return false;
-      if (year && String(s.year) !== year) return false;
+      if (year && !(s.data_years || [s.year]).map(String).includes(year)) return false;
       if (onlyLocated && !loc.lon) return false;
       return true;
     });
@@ -132,6 +132,10 @@
 
   function renderPanel(s, loc) {
     const records = s.records || [];
+    const scoreRecords = records.filter((r) => r["投档线"]);
+    const planRecords = records.filter((r) => r["数据类型"] === "2026招生计划");
+    const planTotal = planRecords.reduce((sum, r) => sum + (parseInt(r["计划数合计"], 10) || 0), 0);
+    const majorTotal = planRecords.reduce((sum, r) => sum + ((r["专业列表"] || []).length), 0);
     const located = loc.lat && loc.lon;
     const amap = located
       ? `https://uri.amap.com/marker?position=${loc.lon},${loc.lat}&name=${encodeURIComponent(s.name)}&src=hb-gaokao-map&coordinate=wgs84&callnative=1`
@@ -144,14 +148,16 @@
         <div class="badge-row">
           ${badge(s.level)}
           ${badge(s.nature)}
-          ${badge(String(s.year) + "年" + (s.level === "专科" ? "参考" : ""))}
+          ${s.level === "专科" && (s.data_years || []).includes("2026") ? badge("2026招生计划") : badge(String(s.year) + "年")}
+          ${(s.data_years || []).some((y) => y === "2024" || y === "2025") ? badge("含往年参考") : ""}
           ${loc.coord_source === "arcgis_poi" ? badge("真实POI坐标") : loc.coord_source === "arcgis_locality" ? badge("区县/城市坐标", true) : badge("坐标待核验", true)}
           ${(s.special || []).map((x) => badge(x)).join("")}
         </div>
         <div class="stat-grid">
           <div class="stat"><b>${value(loc.max_score)}</b><span>最高分</span></div>
           <div class="stat"><b>${value(loc.min_score)}</b><span>最低分</span></div>
-          <div class="stat"><b>${records.length}</b><span>投档线</span></div>
+          <div class="stat"><b>${s.level === "专科" ? planTotal || "-" : scoreRecords.length}</b><span>${s.level === "专科" ? "计划数" : "投档线"}</span></div>
+          ${s.level === "专科" ? `<div class="stat"><b>${majorTotal || "-"}</b><span>专业项</span></div>` : ""}
         </div>
         <div class="jump-row">
           <a href="${amap}" target="_blank" rel="noopener">高德地图</a>
@@ -165,16 +171,18 @@
 
   function renderRecord(r) {
     const majors = r["专业列表"] || [];
+    const isPlan = r["数据类型"] === "2026招生计划";
+    const mainValue = isPlan ? `${r["计划数合计"] || "-"}人` : escapeHtml(r["投档线"] || "-");
     return `
       <article class="record">
         <div class="record-head">
           <div class="record-tags">
-            ${["年份", "科类", "类别", "批次", "计划类别", "类型", "专业组名称", "专业组编号"].map((k) => r[k] ? `<span>${escapeHtml(r[k])}</span>` : "").join("")}
+            ${["数据类型", "年份", "科类", "类别", "批次", "计划类别", "类型", "专业组名称", "专业组编号"].map((k) => r[k] ? `<span>${escapeHtml(r[k])}</span>` : "").join("")}
           </div>
-          <div class="record-score">${escapeHtml(r["投档线"] || "-")}</div>
+          <div class="record-score">${mainValue}</div>
         </div>
         <div class="record-tags">
-          ${["位次", "选科要求", "院校代码", "志愿序号", "备注"].map((k) => r[k] ? `<span>${k}:${escapeHtml(r[k])}</span>` : "").join("")}
+          ${["计划数合计", "位次", "控制线", "选科要求", "院校代码", "志愿序号", "来源年份说明", "备注"].map((k) => r[k] ? `<span>${k}:${escapeHtml(r[k])}</span>` : "").join("")}
         </div>
         ${majors.length ? `<div class="majors">${majors.map(renderMajor).join("")}</div>` : ""}
       </article>
