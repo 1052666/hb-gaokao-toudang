@@ -36,13 +36,54 @@
   });
 
   function initMap() {
-    map = L.map("china-map", { zoomControl: true, preferCanvas: true }).setView([35.5, 104.2], 4);
-    L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}", {
-      subdomains: "1234",
-      maxZoom: 18,
-      attribution: "&copy; 高德地图",
-    }).addTo(map);
+    map = L.map("china-map", {
+      zoomControl: true,
+      preferCanvas: true,
+      attributionControl: false,
+      minZoom: 3,
+      maxZoom: 11,
+    }).setView([35.5, 104.2], 4);
+    map.getContainer().classList.add("offline-map");
+    drawOfflineBaseMap();
     layer = L.layerGroup().addTo(map);
+  }
+
+  function drawOfflineBaseMap() {
+    const chinaOutline = [
+      [53.5, 123.0], [49.5, 119.0], [47.5, 123.5], [45.5, 131.0], [42.5, 128.0],
+      [40.0, 124.0], [39.0, 119.5], [36.5, 122.0], [31.0, 122.5], [27.5, 120.0],
+      [23.0, 117.0], [21.5, 111.0], [18.3, 109.5], [22.5, 106.0], [21.5, 101.5],
+      [24.0, 98.0], [28.0, 97.0], [29.0, 92.0], [31.5, 88.0], [35.0, 80.0],
+      [39.0, 74.0], [42.0, 80.0], [45.0, 83.0], [47.5, 90.0], [49.0, 98.0],
+      [46.0, 104.0], [49.5, 111.0], [53.5, 123.0],
+    ];
+    const hainan = [[20.1, 108.6], [20.2, 111.0], [18.4, 111.2], [18.1, 109.1], [20.1, 108.6]];
+    const taiwan = [[25.4, 121.4], [24.2, 122.1], [22.0, 121.3], [21.9, 120.2], [24.5, 120.4], [25.4, 121.4]];
+    [chinaOutline, hainan, taiwan].forEach((points) => {
+      L.polygon(points, {
+        interactive: false,
+        color: "#b8c2cf",
+        weight: 1.4,
+        fillColor: "#f8fafc",
+        fillOpacity: 0.94,
+      }).addTo(map);
+    });
+    [
+      ["北京", 39.9, 116.4], ["上海", 31.2, 121.5], ["武汉", 30.6, 114.3],
+      ["广州", 23.1, 113.3], ["成都", 30.7, 104.1], ["西安", 34.3, 108.9],
+      ["南京", 32.1, 118.8], ["杭州", 30.3, 120.2], ["重庆", 29.6, 106.5],
+      ["哈尔滨", 45.8, 126.6], ["乌鲁木齐", 43.8, 87.6], ["昆明", 25.0, 102.7],
+    ].forEach(([name, lat, lon]) => {
+      L.marker([lat, lon], {
+        interactive: false,
+        icon: L.divIcon({
+          className: "offline-map-label",
+          html: name,
+          iconSize: [52, 18],
+          iconAnchor: [26, 9],
+        }),
+      }).addTo(map);
+    });
   }
 
   function initFilters() {
@@ -293,7 +334,7 @@
   }
 
   function displayPoint(loc) {
-    return wgs84ToGcj02(Number(loc.lat), Number(loc.lon));
+    return { lat: Number(loc.lat), lon: Number(loc.lon) };
   }
 
   function wgs84ToGcj02(lat, lon) {

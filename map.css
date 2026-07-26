@@ -95,6 +95,36 @@ body {
   transition: box-shadow .35s ease;
 }
 #china-map { width: 100%; height: 680px; }
+.offline-map {
+  background:
+    linear-gradient(90deg, rgba(148,163,184,.16) 1px, transparent 1px),
+    linear-gradient(rgba(148,163,184,.16) 1px, transparent 1px),
+    radial-gradient(circle at 72% 62%, rgba(147,197,253,.32), transparent 32%),
+    linear-gradient(135deg, #edf5fb, #dbeafe 52%, #c7dff0);
+  background-size: 72px 72px, 72px 72px, 100% 100%, 100% 100%;
+}
+.offline-map::after {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  z-index: 500;
+  border: 1px solid rgba(100,116,139,.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,.82);
+  color: #64748b;
+  content: "离线底图";
+  font-size: 11px;
+  padding: 4px 8px;
+  pointer-events: none;
+}
+.offline-map-label {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+  white-space: nowrap;
+}
 .school-dot {
   border-radius: 999px;
   border: 2px solid #fff;
