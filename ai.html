@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 志愿助手</title>
+<link rel="stylesheet" href="ai.css">
+</head>
+<body>
+  <div class="ai-shell">
+    <aside class="context-panel" id="context-panel">
+      <header class="context-head">
+        <div>
+          <strong>数据上下文</strong>
+          <span id="data-status">正在加载数据</span>
+        </div>
+      </header>
+
+      <section class="context-card">
+        <div class="field">
+          <label for="school-search">学校搜索</label>
+          <input id="school-search" type="search" placeholder="输入学校名、城市或省份">
+        </div>
+        <div class="field">
+          <label for="score-input">我的分数</label>
+          <input id="score-input" type="number" min="0" max="750" placeholder="可选">
+        </div>
+        <div class="grid-two">
+          <div class="field">
+            <label for="subject-filter">科类</label>
+            <select id="subject-filter"><option value="">全部</option></select>
+          </div>
+          <div class="field">
+            <label for="batch-filter">批次</label>
+            <select id="batch-filter"><option value="">全部</option></select>
+          </div>
+          <div class="field">
+            <label for="level-filter">层次</label>
+            <select id="level-filter"><option value="">全部</option></select>
+          </div>
+          <div class="field">
+            <label for="year-filter">年份</label>
+            <select id="year-filter"><option value="">全部</option></select>
+          </div>
+          <div class="field">
+            <label for="province-filter">省份</label>
+            <select id="province-filter"><option value="">全部</option></select>
+          </div>
+          <div class="field">
+            <label for="city-filter">城市</label>
+            <select id="city-filter"><option value="">全部</option></select>
+          </div>
+        </div>
+        <div class="context-actions">
+          <button id="reset-context" type="button">重置</button>
+          <button id="use-selection" type="button">引用选中学校</button>
+        </div>
+      </section>
+
+      <section class="context-card result-card">
+        <div class="result-head">
+          <strong id="match-count">0 所学校</strong>
+          <span id="selected-label">未引用学校</span>
+        </div>
+        <div class="school-results" id="school-results"></div>
+      </section>
+
+      <p class="context-note">数据仅供志愿填报参考，请以湖北省招办、考试院和高校官方最终公布信息为准。</p>
+    </aside>
+
+    <main class="chat-page">
+      <header class="chat-header">
+        <div class="brand">
+          <span class="runtime-dot" id="runtime-dot"></span>
+          <div>
+            <strong>AI 志愿助手</strong>
+            <small>MiniMax-M3 · 当前页面数据上下文</small>
+          </div>
+        </div>
+        <nav class="top-nav" aria-label="页面导航">
+          <button id="clear-chat" type="button">清空</button>
+          <a href="index.html">投档线</a>
+          <a href="map.html">地图</a>
+        </nav>
+      </header>
+
+      <section class="message-scroll" id="message-scroll">
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon">AI</div>
+          <h1>把筛选结果交给 AI 看</h1>
+          <p>直接输入分数、科类、批次、专业或学校名，AI 会自动检索全站数据；也可以手动引用学校做精确比较。</p>
+          <div class="prompt-list">
+            <button type="button" data-prompt="380分历史类专科批，想读护理，湖北省内有哪些学校可以重点看？">按分数自动查<span>›</span></button>
+            <button type="button" data-prompt="帮我查一下武汉职业技术学院的2026招生计划、专业、学费和往年参考分数。">查具体学校<span>›</span></button>
+            <button type="button" data-prompt="我还没确定专业方向，请先问我几个关键问题，再根据数据帮我缩小范围。">引导我补充信息<span>›</span></button>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+      </section>
+
+      <footer class="composer-area">
+        <div class="reference-bar" id="reference-bar" hidden></div>
+        <div class="composer">
+          <textarea id="question-input" rows="1" placeholder="输入分数、科类、专业或学校名..."></textarea>
+          <button class="send-button" id="send-button" type="button">发送</button>
+        </div>
+        <div class="composer-meta">
+          <span id="context-summary">上下文未就绪</span>
+          <span>AI 输出仅供参考</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script src="ai.js"></script>
+</body>
+</html>
