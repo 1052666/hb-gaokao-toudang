@@ -99,9 +99,9 @@ body {
   background:
     linear-gradient(90deg, rgba(148,163,184,.16) 1px, transparent 1px),
     linear-gradient(rgba(148,163,184,.16) 1px, transparent 1px),
-    radial-gradient(circle at 72% 62%, rgba(147,197,253,.32), transparent 32%),
-    linear-gradient(135deg, #edf5fb, #dbeafe 52%, #c7dff0);
-  background-size: 72px 72px, 72px 72px, 100% 100%, 100% 100%;
+    radial-gradient(circle at 72% 62%, rgba(147,197,253,.26), transparent 34%),
+    linear-gradient(135deg, #f1f7fb, #dbeafe 56%, #c7dff0);
+  background-size: 96px 96px, 96px 96px, 100% 100%, 100% 100%;
 }
 .offline-map::after {
   position: absolute;
@@ -112,18 +112,23 @@ body {
   border-radius: 999px;
   background: rgba(255,255,255,.82);
   color: #64748b;
-  content: "离线底图";
+  content: "本地行政区划底图";
   font-size: 11px;
   padding: 4px 8px;
   pointer-events: none;
 }
 .offline-map-label {
-  color: #475569;
+  color: #64748b;
   font-size: 11px;
   font-weight: 700;
   text-align: center;
   text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
   white-space: nowrap;
+}
+.province-label {
+  color: #536579;
+  font-size: 12px;
+  opacity: .82;
 }
 .school-dot {
   border-radius: 999px;

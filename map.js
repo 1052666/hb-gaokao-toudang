@@ -18,15 +18,18 @@
   let locations = null;
   let map = null;
   let layer = null;
+  let baseLayer = null;
   let selectedId = null;
   const chunkCache = new Map();
 
   Promise.all([
     fetch("data_index.json").then((r) => r.json()),
     fetch("school_locations.json").then((r) => r.json()),
-  ]).then(([d, l]) => {
+    fetch("maps/china_provinces_full.geojson").then((r) => r.json()),
+  ]).then(([d, l, chinaMap]) => {
     data = d;
     locations = l;
+    locations.chinaMap = chinaMap;
     initMap();
     initFilters();
     renderMarkers();
@@ -49,41 +52,52 @@
   }
 
   function drawOfflineBaseMap() {
-    const chinaOutline = [
-      [53.5, 123.0], [49.5, 119.0], [47.5, 123.5], [45.5, 131.0], [42.5, 128.0],
-      [40.0, 124.0], [39.0, 119.5], [36.5, 122.0], [31.0, 122.5], [27.5, 120.0],
-      [23.0, 117.0], [21.5, 111.0], [18.3, 109.5], [22.5, 106.0], [21.5, 101.5],
-      [24.0, 98.0], [28.0, 97.0], [29.0, 92.0], [31.5, 88.0], [35.0, 80.0],
-      [39.0, 74.0], [42.0, 80.0], [45.0, 83.0], [47.5, 90.0], [49.0, 98.0],
-      [46.0, 104.0], [49.5, 111.0], [53.5, 123.0],
-    ];
-    const hainan = [[20.1, 108.6], [20.2, 111.0], [18.4, 111.2], [18.1, 109.1], [20.1, 108.6]];
-    const taiwan = [[25.4, 121.4], [24.2, 122.1], [22.0, 121.3], [21.9, 120.2], [24.5, 120.4], [25.4, 121.4]];
-    [chinaOutline, hainan, taiwan].forEach((points) => {
-      L.polygon(points, {
-        interactive: false,
-        color: "#b8c2cf",
-        weight: 1.4,
-        fillColor: "#f8fafc",
-        fillOpacity: 0.94,
-      }).addTo(map);
-    });
-    [
-      ["北京", 39.9, 116.4], ["上海", 31.2, 121.5], ["武汉", 30.6, 114.3],
-      ["广州", 23.1, 113.3], ["成都", 30.7, 104.1], ["西安", 34.3, 108.9],
-      ["南京", 32.1, 118.8], ["杭州", 30.3, 120.2], ["重庆", 29.6, 106.5],
-      ["哈尔滨", 45.8, 126.6], ["乌鲁木齐", 43.8, 87.6], ["昆明", 25.0, 102.7],
-    ].forEach(([name, lat, lon]) => {
-      L.marker([lat, lon], {
+    if (!locations.chinaMap) return;
+    baseLayer = L.geoJSON(locations.chinaMap, {
+      interactive: false,
+      style: (feature) => ({
+        color: feature?.properties?.childrenNum ? "#9fb0c3" : "#c8d3df",
+        weight: feature?.properties?.childrenNum ? 1.15 : 0.55,
+        fillColor: provinceFill(feature?.properties?.name),
+        fillOpacity: 0.93,
+      }),
+    }).addTo(map);
+    addProvinceLabels(locations.chinaMap);
+    const bounds = baseLayer.getBounds();
+    if (bounds.isValid()) map.fitBounds(bounds.pad(0.02));
+  }
+
+  function provinceFill(name) {
+    const palette = ["#f8fafc", "#eef6ff", "#f3f7ee", "#fff7ed", "#f5f3ff", "#ecfeff"];
+    const key = String(name || "").split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return palette[key % palette.length];
+  }
+
+  function addProvinceLabels(geojson) {
+    const placed = new Set();
+    (geojson.features || []).forEach((feature) => {
+      const name = feature?.properties?.name;
+      const center = feature?.properties?.center || feature?.properties?.centroid;
+      if (!name || !center || placed.has(name)) return;
+      placed.add(name);
+      L.marker([center[1], center[0]], {
         interactive: false,
         icon: L.divIcon({
-          className: "offline-map-label",
-          html: name,
-          iconSize: [52, 18],
-          iconAnchor: [26, 9],
+          className: "offline-map-label province-label",
+          html: provinceShortName(name),
+          iconSize: [64, 18],
+          iconAnchor: [32, 9],
         }),
       }).addTo(map);
     });
+  }
+
+  function provinceShortName(name) {
+    return String(name || "")
+      .replace(/\u7279\u522b\u884c\u653f\u533a$/u, "")
+      .replace(/\u81ea\u6cbb\u533a$/u, "")
+      .replace(/\u7701$/u, "")
+      .replace(/\u5e02$/u, "");
   }
 
   function initFilters() {
