@@ -688,22 +688,55 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @keyframes pulse { 50% { opacity: .42; } }
 
 @media (max-width: 900px) {
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
   .ai-shell {
-    height: auto;
-    min-height: 100vh;
+    height: 100dvh;
+    min-height: 0;
     grid-template-columns: 1fr;
-    overflow: visible;
+    grid-template-rows: minmax(180px, 34dvh) minmax(0, 1fr);
+    overflow: hidden;
   }
   .context-panel {
-    max-height: 55vh;
+    min-height: 0;
+    max-height: none;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 8px;
+    overflow: auto;
     border-right: 0;
     border-bottom: 1px solid var(--line-subtle);
+    padding: 10px;
   }
-  .chat-page { min-height: 82vh; }
-  .chat-header { padding: 0 10px; }
-  .top-nav { gap: 5px; }
+  .context-card { gap: 9px; padding: 10px; }
+  .context-note { display: none; }
+  .result-card { min-height: 0; }
+  .school-results { max-height: 120px; }
+  .chat-page {
+    min-height: 0;
+    height: auto;
+  }
+  .chat-header {
+    min-height: 54px;
+    height: auto;
+    align-items: flex-start;
+    padding: 8px 10px;
+  }
+  .brand { flex: 1 1 auto; }
+  .top-nav {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+  }
   .top-nav button, .top-nav a { padding: 0 8px; font-size: 11px; }
   .welcome, .messages, .composer-area { width: calc(100% - 20px); }
+  .welcome {
+    min-height: auto;
+    align-content: start;
+    padding: 18px 0;
+  }
   .message { grid-template-columns: 26px minmax(0, 1fr); gap: 8px; }
   .message.user { grid-template-columns: minmax(0, 1fr) 26px; }
   .avatar { width: 26px; height: 26px; }
@@ -712,8 +745,73 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 @media (max-width: 560px) {
+  .ai-shell {
+    grid-template-rows: minmax(160px, 30dvh) minmax(0, 1fr);
+  }
+  .context-head {
+    min-height: auto;
+  }
+  .context-head strong { font-size: 12px; }
+  .context-head span { font-size: 10px; }
+  .grid-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .field input, .field select {
+    height: 32px;
+    font-size: 12px;
+  }
+  .context-actions button { min-height: 32px; font-size: 12px; }
+  .result-head { align-items: flex-start; }
+  .school-results { max-height: 96px; }
+  .chat-header {
+    gap: 8px;
+  }
   .brand small { display: none; }
   .top-nav a[href="map.html"] { display: none; }
+  .top-nav button, .top-nav a {
+    min-height: 29px;
+    padding: 0 7px;
+  }
+  .welcome-icon {
+    width: 42px;
+    height: 42px;
+  }
   .send-button { flex-basis: 58px; }
   .welcome h1 { font-size: 21px; }
+  .welcome p {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .welcome .welcome-notice {
+    padding: 7px 8px;
+    font-size: 10px;
+  }
+  .prompt-list button {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  .composer-area {
+    width: calc(100% - 14px);
+    padding: 6px 0 8px;
+  }
+  .composer {
+    min-height: 48px;
+    gap: 5px;
+    padding: 5px;
+  }
+  .composer textarea {
+    min-height: 34px;
+    padding: 7px 5px;
+    font-size: 12px;
+  }
+  .composer-meta {
+    justify-content: flex-start;
+    gap: 3px 8px;
+    font-size: 9px;
+  }
+  .composer-meta span + span::before {
+    margin-right: 8px;
+  }
 }
