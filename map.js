@@ -37,9 +37,10 @@
 
   function initMap() {
     map = L.map("china-map", { zoomControl: true, preferCanvas: true }).setView([35.5, 104.2], 4);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer("https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}", {
+      subdomains: "1234",
       maxZoom: 18,
-      attribution: "&copy; OpenStreetMap contributors",
+      attribution: "&copy; 高德地图",
     }).addTo(map);
     layer = L.layerGroup().addTo(map);
   }
@@ -142,14 +143,18 @@
     for (const loc of rows) {
       if (!loc.lon || !loc.lat) continue;
       const s = schoolById(loc.id);
-      const marker = L.circleMarker([loc.lat, loc.lon], markerStyle(s, loc));
+      const point = displayPoint(loc);
+      const marker = L.circleMarker([point.lat, point.lon], markerStyle(s, loc));
       marker.bindTooltip(s.name, { direction: "top", offset: [0, -6] });
       marker.on("click", () => selectSchool(loc.id));
       marker.addTo(layer);
       if (!firstLocated) firstLocated = loc;
     }
     metaEl.textContent = `${rows.length} 所符合条件；地图显示 ${rows.filter((x) => x.lon && x.lat).length} 个坐标点。${locations.meta.unresolved} 所暂未可靠定位，可用名称跳转地图搜索。`;
-    if (firstLocated && !selectedId) map.setView([firstLocated.lat, firstLocated.lon], 5);
+    if (firstLocated && !selectedId) {
+      const point = displayPoint(firstLocated);
+      map.setView([point.lat, point.lon], 5);
+    }
     if (rows.length && (!selectedId || !rows.some((x) => String(x.id) === String(selectedId)))) {
       const preferred = firstLocated || rows[0];
       selectedId = preferred.id;
@@ -161,7 +166,10 @@
     selectedId = id;
     const s = schoolById(id);
     const loc = locations.schools.find((x) => String(x.id) === String(id)) || {};
-    if (loc.lat && loc.lon) map.setView([loc.lat, loc.lon], 9);
+    if (loc.lat && loc.lon) {
+      const point = displayPoint(loc);
+      map.setView([point.lat, point.lon], 9);
+    }
     renderPanel(s, loc);
   }
 
@@ -282,6 +290,45 @@
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function displayPoint(loc) {
+    return wgs84ToGcj02(Number(loc.lat), Number(loc.lon));
+  }
+
+  function wgs84ToGcj02(lat, lon) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || outOfChina(lat, lon)) return { lat, lon };
+    const a = 6378245.0;
+    const ee = 0.00669342162296594323;
+    let dLat = transformLat(lon - 105.0, lat - 35.0);
+    let dLon = transformLon(lon - 105.0, lat - 35.0);
+    const radLat = lat / 180.0 * Math.PI;
+    let magic = Math.sin(radLat);
+    magic = 1 - ee * magic * magic;
+    const sqrtMagic = Math.sqrt(magic);
+    dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * Math.PI);
+    dLon = (dLon * 180.0) / (a / sqrtMagic * Math.cos(radLat) * Math.PI);
+    return { lat: lat + dLat, lon: lon + dLon };
+  }
+
+  function outOfChina(lat, lon) {
+    return lon < 72.004 || lon > 137.8347 || lat < 0.8293 || lat > 55.8271;
+  }
+
+  function transformLat(x, y) {
+    let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+    ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
+    ret += (20.0 * Math.sin(y * Math.PI) + 40.0 * Math.sin(y / 3.0 * Math.PI)) * 2.0 / 3.0;
+    ret += (160.0 * Math.sin(y / 12.0 * Math.PI) + 320 * Math.sin(y * Math.PI / 30.0)) * 2.0 / 3.0;
+    return ret;
+  }
+
+  function transformLon(x, y) {
+    let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+    ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
+    ret += (20.0 * Math.sin(x * Math.PI) + 40.0 * Math.sin(x / 3.0 * Math.PI)) * 2.0 / 3.0;
+    ret += (150.0 * Math.sin(x / 12.0 * Math.PI) + 300.0 * Math.sin(x / 30.0 * Math.PI)) * 2.0 / 3.0;
+    return ret;
   }
 
   function place(s, loc = {}) {
