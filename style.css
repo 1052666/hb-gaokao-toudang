@@ -22,6 +22,7 @@ body {
   line-height: 1.6;
   font-size: 15px;
 }
+body.modal-open { overflow: hidden; }
 
 /* ===== 顶部 ===== */
 .site-header {
@@ -44,7 +45,11 @@ body {
   gap: 8px;
   flex-shrink: 0;
 }
-.site-nav a {
+.site-nav a,
+.site-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
   text-decoration: none;
   border: 1px solid rgba(255,255,255,.45);
@@ -53,9 +58,12 @@ body {
   font-size: 13px;
   line-height: 1.2;
   background: rgba(255,255,255,.08);
+  font-family: inherit;
+  cursor: pointer;
 }
 .site-nav a:hover,
-.site-nav a[aria-current="page"] {
+.site-nav a[aria-current="page"],
+.site-nav button:hover {
   background: #fff;
   color: var(--primary);
 }
@@ -346,9 +354,82 @@ body {
 .site-footer a:hover { text-decoration: underline; }
 .footer-note { margin-top: 6px; font-size: 12px; opacity: .7; }
 
+/* ===== 联系弹窗 ===== */
+.contact-modal[hidden] { display: none; }
+.contact-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+.contact-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, .45);
+}
+.contact-dialog {
+  position: relative;
+  width: min(420px, 100%);
+  border-radius: 10px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, .28);
+}
+.contact-dialog h2 {
+  margin-bottom: 10px;
+  font-size: 22px;
+  line-height: 1.25;
+}
+.contact-dialog p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.contact-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.contact-close:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.wechat-card {
+  margin-top: 18px;
+  border: 1px solid #cfe7dc;
+  border-radius: 8px;
+  background: #f0fdf4;
+  padding: 14px 16px;
+}
+.wechat-card span {
+  display: block;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wechat-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #14532d;
+  font-size: 24px;
+  line-height: 1.2;
+  word-break: break-all;
+}
+
 /* ===== 响应式 ===== */
 @media (max-width: 640px) {
   .header-top { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .site-nav { flex-wrap: wrap; }
   .site-title { font-size: 20px; }
   .filters { gap: 10px; }
   .filter-group select, .filter-group input { min-width: 90px; font-size: 13px; }

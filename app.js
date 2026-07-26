@@ -27,9 +27,14 @@
   const resultCount = $("result-count");
   const backToTop = $("back-to-top");
   const metaText = $("meta-text");
+  const contactOpen = $("contact-open");
+  const contactModal = $("contact-modal");
+  const contactClose = $("contact-close");
 
   // 层次标签颜色
   const LEVEL_CLASS = { "985": "lv-985", "211": "lv-211", "本科": "lv-bk", "专科": "lv-zk" };
+
+  initContactModal();
 
   fetch("data.json")
     .then((r) => r.json())
@@ -44,6 +49,27 @@
     .catch(() => {
       listEl.innerHTML = '<div class="empty-placeholder">数据加载失败，请刷新重试</div>';
     });
+
+  function initContactModal() {
+    if (!contactOpen || !contactModal) return;
+    const closeEls = [...contactModal.querySelectorAll("[data-contact-close]"), contactClose].filter(Boolean);
+    contactOpen.addEventListener("click", (e) => {
+      e.preventDefault();
+      contactModal.hidden = false;
+      document.body.classList.add("modal-open");
+      contactClose?.focus();
+    });
+    closeEls.forEach((el) => el.addEventListener("click", closeContactModal));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !contactModal.hidden) closeContactModal();
+    });
+  }
+
+  function closeContactModal() {
+    contactModal.hidden = true;
+    document.body.classList.remove("modal-open");
+    contactOpen?.focus();
+  }
 
   function updateMeta() {
     const m = DATA.meta;

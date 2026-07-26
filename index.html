@@ -15,6 +15,7 @@
           <a href="index.html" aria-current="page">投档线</a>
           <a href="yfd_chart.html">一分一段</a>
           <a href="map.html">地图</a>
+          <button class="contact-nav-btn" id="contact-open" type="button">联系我</button>
         </nav>
       </div>
       <p class="site-sub" id="meta-text">数据加载中…</p>
@@ -113,6 +114,19 @@
     <p>数据来源：<a href="https://m.wh.bendibao.com/edu/toudangfenshuxian/" target="_blank" rel="noopener">武汉本地宝</a>、<a href="https://zsxxw.e21.cn/" target="_blank" rel="noopener">湖北招生信息综合服务平台</a>、<a href="https://api.eol.cn/" target="_blank" rel="noopener">阳光高考</a> · 仅供志愿填报参考，请以官方公布为准</p>
     <p class="footer-note">本科投档线为2026年数据；专科已接入2026招生计划，专业、计划数、学费均标注为2026计划；2025/2024专科投档线仅作往年参考，不代表2026录取结果。</p>
   </footer>
+
+  <div class="contact-modal" id="contact-modal" hidden>
+    <div class="contact-backdrop" data-contact-close></div>
+    <section class="contact-dialog" role="dialog" aria-modal="true" aria-labelledby="contact-title">
+      <button class="contact-close" type="button" id="contact-close" aria-label="关闭">×</button>
+      <h2 id="contact-title">联系我</h2>
+      <p>如果页面有 bug、数据异常，或者有补充信息，可以通过微信联系我。</p>
+      <div class="wechat-card">
+        <span>微信号</span>
+        <strong>L1014orZ1015</strong>
+      </div>
+    </section>
+  </div>
 
   <script src="app.js"></script>
 </body>
