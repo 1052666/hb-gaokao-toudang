@@ -236,6 +236,34 @@ body {
 .school-card.expanded .score-detail { display: block; }
 
 .score-cards { display: flex; flex-direction: column; gap: 10px; }
+.detail-actions {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,.96);
+  color: var(--text-secondary);
+  font-size: 13px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.05);
+}
+.detail-back {
+  border: 0;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.detail-back:hover { background: var(--primary-dark); }
 .score-card {
   background: #fff;
   border: 1px solid var(--border);
@@ -329,6 +357,8 @@ body {
   .school-stats { gap: 10px; }
   .school-stat .val { font-size: 16px; }
   .score-detail { padding: 14px; }
+  .detail-actions { align-items: flex-start; flex-direction: column; }
+  .detail-back { width: 100%; }
   .score-detail-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
   .back-to-top { bottom: 20px; right: 20px; }
 }

@@ -5,6 +5,7 @@
   let DATA = null;
   let filteredSchools = [];
   let renderedCount = 0;
+  let activeSchoolId = null;
   const PAGE_SIZE = 40;
 
   const $ = (id) => document.getElementById(id);
@@ -36,6 +37,7 @@
       DATA = d;
       normalizeRecords();
       initFilters();
+      restoreFilters();
       updateMeta();
       applyFilters();
     })
@@ -146,6 +148,8 @@
     }
 
     filteredSchools.sort((a, b) => maxScore(b._matched) - maxScore(a._matched));
+    saveFilters();
+    activeSchoolId = null;
 
     renderedCount = 0;
     listEl.innerHTML = "";
@@ -158,6 +162,7 @@
       return;
     }
     renderMore();
+    openSchoolFromHash();
   }
 
   function maxScore(records) {
@@ -199,6 +204,7 @@
   function renderSchoolCard(s, rank) {
     const card = document.createElement("div");
     card.className = "school-card";
+    card.dataset.schoolId = String(s.id);
     const records = s._matched || [];
     const hasData = records.length > 0;
     const hi = hasData ? maxScore(records) : -1;
@@ -228,19 +234,71 @@
     const header = card.querySelector(".school-header");
     const detail = card.querySelector(".score-detail");
     header.addEventListener("click", () => {
-      const expanded = card.classList.toggle("expanded");
-      if (expanded && detail.children.length === 0) {
-        detail.appendChild(renderScoreCards(records));
+      if (card.classList.contains("expanded")) {
+        closeActiveDetail({ updateUrl: true });
+      } else {
+        openSchoolCard(card, s, records, { updateUrl: true, scrollIntoView: false });
       }
     });
     return card;
   }
 
-  function renderScoreCards(records) {
+  function openSchoolCard(card, s, records, options = {}) {
+    closeActiveDetail({ updateUrl: false });
+    const detail = card.querySelector(".score-detail");
+    if (detail.children.length === 0) {
+      detail.appendChild(renderScoreCards(records, s.name));
+    }
+    card.classList.add("expanded");
+    activeSchoolId = String(s.id);
+    if (options.updateUrl) {
+      const hash = `#school=${encodeURIComponent(activeSchoolId)}`;
+      if (location.hash !== hash) history.pushState({ schoolId: activeSchoolId }, "", hash);
+    }
+    if (options.scrollIntoView) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function closeActiveDetail(options = {}) {
+    if (!activeSchoolId) return;
+    const card = listEl.querySelector(`.school-card[data-school-id="${cssEscape(activeSchoolId)}"]`);
+    if (card) card.classList.remove("expanded");
+    activeSchoolId = null;
+    if (options.updateUrl && location.hash.startsWith("#school=")) {
+      if (history.state && history.state.schoolId) {
+        history.back();
+      } else {
+        history.replaceState(null, "", location.pathname + location.search);
+      }
+    }
+  }
+
+  function openSchoolFromHash() {
+    const match = location.hash.match(/^#school=(.+)$/);
+    if (!match) return;
+    const id = decodeURIComponent(match[1]);
+    const index = filteredSchools.findIndex((s) => String(s.id) === id);
+    if (index === -1) return;
+    while (renderedCount <= index && renderedCount < filteredSchools.length) renderMore();
+    const card = listEl.querySelector(`.school-card[data-school-id="${cssEscape(id)}"]`);
+    if (card) openSchoolCard(card, filteredSchools[index], filteredSchools[index]._matched || [], { updateUrl: false, scrollIntoView: true });
+  }
+
+  function renderScoreCards(records, schoolName) {
     const wrap = document.createElement("div");
     wrap.className = "score-cards";
+    const tools = document.createElement("div");
+    tools.className = "detail-actions";
+    tools.innerHTML = `
+      <button type="button" class="detail-back">返回列表</button>
+      <span>${escapeHtml(schoolName || "")} · ${records.length} 条投档线</span>
+    `;
+    tools.querySelector(".detail-back").addEventListener("click", () => closeActiveDetail({ updateUrl: true }));
+    wrap.appendChild(tools);
     if (records.length === 0) {
-      wrap.innerHTML = '<div style="color:#8c8c8c;text-align:center;padding:20px;">该学校暂无投档线数据</div>';
+      const empty = document.createElement("div");
+      empty.style.cssText = "color:#8c8c8c;text-align:center;padding:20px;";
+      empty.textContent = "该学校暂无投档线数据";
+      wrap.appendChild(empty);
       return wrap;
     }
     const sorted = records.slice().sort((a, b) => {
@@ -306,6 +364,53 @@
     return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
+  function cssEscape(s) {
+    return String(s).replace(/["\\]/g, "\\$&");
+  }
+
+  function currentFilterState() {
+    return {
+      search: searchInput.value,
+      subject: filterSubject.value,
+      batch: filterBatch.value,
+      plan: filterPlan.value,
+      level: filterLevel.value,
+      region: filterRegion.value,
+      nature: filterNature.value,
+      special: filterSpecial.value,
+      year: filterYear.value,
+      min: filterMin.value,
+      max: filterMax.value,
+      onlyData: onlyHasData.checked,
+    };
+  }
+
+  function saveFilters() {
+    try {
+      sessionStorage.setItem("hbGaokaoFilters", JSON.stringify(currentFilterState()));
+    } catch (_) {}
+  }
+
+  function restoreFilters() {
+    try {
+      const raw = sessionStorage.getItem("hbGaokaoFilters");
+      if (!raw) return;
+      const f = JSON.parse(raw);
+      searchInput.value = f.search || "";
+      filterSubject.value = f.subject || "";
+      filterBatch.value = f.batch || "";
+      filterPlan.value = f.plan || "";
+      filterLevel.value = f.level || "";
+      filterRegion.value = f.region || "";
+      filterNature.value = f.nature || "";
+      filterSpecial.value = f.special || "";
+      filterYear.value = f.year || "";
+      filterMin.value = f.min || "";
+      filterMax.value = f.max || "";
+      onlyHasData.checked = !!f.onlyData;
+    } catch (_) {}
+  }
+
   // ===== 事件 =====
   let debounceTimer = null;
   searchInput.addEventListener("input", () => {
@@ -331,6 +436,16 @@
     filterMin.value = ""; filterMax.value = "";
     onlyHasData.checked = false;
     applyFilters();
+  });
+
+  window.addEventListener("popstate", () => {
+    if (location.hash.startsWith("#school=")) {
+      openSchoolFromHash();
+    } else if (activeSchoolId) {
+      const card = listEl.querySelector(`.school-card[data-school-id="${cssEscape(activeSchoolId)}"]`);
+      if (card) card.classList.remove("expanded");
+      activeSchoolId = null;
+    }
   });
 
   window.addEventListener("scroll", () => {
