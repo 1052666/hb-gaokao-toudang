@@ -17,6 +17,7 @@
   const filterPlan = $("filter-plan");
   const filterLevel = $("filter-level");
   const filterRegion = $("filter-region");
+  const filterCity = $("filter-city");
   const filterNature = $("filter-nature");
   const filterSpecial = $("filter-special");
   const filterYear = $("filter-year");
@@ -89,6 +90,9 @@
   }
 
   function fillSelect(el, options) {
+    const first = el.options[0];
+    el.innerHTML = "";
+    if (first) el.appendChild(first);
     (options || []).forEach((v) => {
       const o = document.createElement("option");
       o.value = v; o.textContent = v;
@@ -103,6 +107,7 @@
     fillSelect(filterPlan, [...new Set([...(f["计划类别"] || []), ...collectRecordValues("类型")])].sort((a, b) => a.localeCompare(b, "zh-CN")));
     fillSelect(filterLevel, [...new Set([...(f["院校层次"] || []), ...collectSchoolValues("level")])].sort((a, b) => a.localeCompare(b, "zh-CN")));
     fillSelect(filterRegion, f["所在地"]);
+    updateCityOptions();
     fillSelect(filterNature, f["办学性质"]);
     fillSelect(filterSpecial, f["特殊类型"]);
     fillSelect(filterYear, [...new Set([...(f["年份"] || []), ...collectRecordValues("年份")])].sort());
@@ -122,6 +127,43 @@
     return DATA.schools.map((s) => s[key]).filter(Boolean);
   }
 
+  function placeProvince(s) {
+    return (s.place && s.place.province) || s.region || "";
+  }
+
+  function placeCity(s) {
+    return (s.place && s.place.city) || s.city || "";
+  }
+
+  function locationText(s) {
+    return (s.place && (s.place.display || s.place.compact)) || [placeProvince(s), placeCity(s)].filter(Boolean).join(" · ") || "位置待核验";
+  }
+
+  function locationAddress(s) {
+    const place = s.place || {};
+    const address = place.address || "";
+    return address && address !== s.name && address !== locationText(s) ? address : "";
+  }
+
+  function locationConfidence(s) {
+    return (s.place && s.place.confidence) || (placeProvince(s) ? "medium" : "low");
+  }
+
+  function citiesForProvince(province) {
+    const cities = DATA.schools
+      .filter((s) => !province || placeProvince(s) === province)
+      .map((s) => placeCity(s))
+      .filter(Boolean);
+    return [...new Set(cities)].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  }
+
+  function updateCityOptions() {
+    const current = filterCity.value;
+    const cities = citiesForProvince(filterRegion.value);
+    fillSelect(filterCity, cities);
+    filterCity.value = cities.includes(current) ? current : "";
+  }
+
   // ===== 筛选 =====
   function applyFilters() {
     if (!DATA) return;
@@ -131,6 +173,7 @@
     const plan = filterPlan.value;
     const level = filterLevel.value;
     const region = filterRegion.value;
+    const city = filterCity.value;
     const nature = filterNature.value;
     const special = filterSpecial.value;
     const year = filterYear.value;
@@ -142,11 +185,12 @@
     filteredSchools = [];
 
     for (const s of DATA.schools) {
-      const schoolText = `${s.name || ""} ${s.city || ""} ${s.region || ""}`.toLowerCase();
+      const schoolText = `${s.name || ""} ${s.city || ""} ${s.region || ""} ${locationText(s)} ${locationAddress(s)}`.toLowerCase();
       const schoolMatchesKeyword = !kw || schoolText.includes(kw);
       // 学校维度筛选
       if (level && s.level !== level) continue;
-      if (region && s.region !== region) continue;
+      if (region && placeProvince(s) !== region) continue;
+      if (city && placeCity(s) !== city) continue;
       if (nature && s.nature !== nature) continue;
       if (special && !(s.special || []).includes(special)) continue;
 
@@ -260,7 +304,8 @@
       tags.push(`<span class="school-badge bg-year">${s.year}年</span>`);
     }
     if ((s.data_years || []).some((y) => y === "2024" || y === "2025")) tags.push(`<span class="school-badge bg-year">含往年参考</span>`);
-    if (s.region) tags.push(`<span class="school-badge bg-region">${s.region}</span>`);
+    if (placeProvince(s)) tags.push(`<span class="school-badge bg-region">${placeProvince(s)}</span>`);
+    if (placeCity(s)) tags.push(`<span class="school-badge bg-city">${placeCity(s)}</span>`);
     if (s.nature) tags.push(`<span class="school-badge bg-nature">${s.nature}</span>`);
     (s.special || []).forEach((sp) => tags.push(`<span class="school-badge bg-special">${sp}</span>`));
     return tags.join("");
@@ -284,6 +329,12 @@
         <div class="school-title">
           <span class="school-name">${highlight(s.name, searchInput.value.trim())}</span>
           <div class="school-badges">${badgesHtml(s)}</div>
+          <div class="school-location">
+            <span class="location-label">位置</span>
+            <span>${escapeHtml(locationText(s))}</span>
+            ${locationAddress(s) ? `<small>${escapeHtml(locationAddress(s))}</small>` : ""}
+            ${locationConfidence(s) !== "high" ? `<em>待核验</em>` : ""}
+          </div>
         </div>
         <div class="school-stats">
           ${hasScore ? `
@@ -319,7 +370,7 @@
     closeActiveDetail({ updateUrl: false });
     const detail = card.querySelector(".score-detail");
     if (detail.children.length === 0) {
-      detail.appendChild(renderScoreCards(records, s.name));
+      detail.appendChild(renderScoreCards(records, s));
     }
     card.classList.add("expanded");
     activeSchoolId = String(s.id);
@@ -355,14 +406,14 @@
     if (card) openSchoolCard(card, filteredSchools[index], filteredSchools[index]._matched || [], { updateUrl: false, scrollIntoView: true });
   }
 
-  function renderScoreCards(records, schoolName) {
+  function renderScoreCards(records, school) {
     const wrap = document.createElement("div");
     wrap.className = "score-cards";
     const tools = document.createElement("div");
     tools.className = "detail-actions";
     tools.innerHTML = `
       <button type="button" class="detail-back">返回列表</button>
-      <span>${escapeHtml(schoolName || "")} · ${records.length} 条记录</span>
+      <span>${escapeHtml(school.name || "")} · ${escapeHtml(locationText(school))} · ${records.length} 条记录</span>
     `;
     tools.querySelector(".detail-back").addEventListener("click", () => closeActiveDetail({ updateUrl: true }));
     wrap.appendChild(tools);
@@ -460,6 +511,7 @@
       plan: filterPlan.value,
       level: filterLevel.value,
       region: filterRegion.value,
+      city: filterCity.value,
       nature: filterNature.value,
       special: filterSpecial.value,
       year: filterYear.value,
@@ -486,6 +538,11 @@
       filterPlan.value = f.plan || "";
       filterLevel.value = f.level || "";
       filterRegion.value = f.region || "";
+      updateCityOptions();
+      filterCity.value = f.city || "";
+      if (filterCity.value && filterRegion.value && !citiesForProvince(filterRegion.value).includes(filterCity.value)) {
+        filterCity.value = "";
+      }
       filterNature.value = f.nature || "";
       filterSpecial.value = f.special || "";
       filterYear.value = f.year || "";
@@ -504,9 +561,13 @@
   clearBtn.addEventListener("click", () => {
     searchInput.value = ""; applyFilters(); searchInput.focus();
   });
-  [filterSubject, filterBatch, filterPlan, filterLevel, filterRegion, filterNature, filterSpecial, filterYear].forEach((el) =>
+  [filterSubject, filterBatch, filterPlan, filterLevel, filterCity, filterNature, filterSpecial, filterYear].forEach((el) =>
     el.addEventListener("change", applyFilters)
   );
+  filterRegion.addEventListener("change", () => {
+    updateCityOptions();
+    applyFilters();
+  });
   [filterMin, filterMax].forEach((el) =>
     el.addEventListener("input", () => {
       clearTimeout(debounceTimer);
@@ -516,9 +577,10 @@
   onlyHasData.addEventListener("change", applyFilters);
   resetBtn.addEventListener("click", () => {
     searchInput.value = "";
-    [filterSubject, filterBatch, filterPlan, filterLevel, filterRegion, filterNature, filterSpecial, filterYear].forEach((el) => (el.value = ""));
+    [filterSubject, filterBatch, filterPlan, filterLevel, filterRegion, filterCity, filterNature, filterSpecial, filterYear].forEach((el) => (el.value = ""));
     filterMin.value = ""; filterMax.value = "";
     onlyHasData.checked = false;
+    updateCityOptions();
     applyFilters();
   });
 

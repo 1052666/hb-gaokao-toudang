@@ -6,6 +6,8 @@
   const searchEl = $("school-search");
   const levelEl = $("level-filter");
   const yearEl = $("year-filter");
+  const provinceEl = $("province-filter");
+  const cityEl = $("city-filter");
   const onlyLocatedEl = $("only-located");
   const mode2d = $("mode-2d");
   const mode3d = $("mode-3d");
@@ -44,22 +46,49 @@
   function initFilters() {
     const levels = [...new Set(data.schools.map((s) => s.level).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
     const years = [...new Set(data.schools.flatMap((s) => (s.data_years || [s.year]).map(String)).filter(Boolean))].sort();
+    const provinces = [...new Set(data.schools.map((s) => placeProvince(s)).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
+    const cities = [...new Set(data.schools.map((s) => placeCity(s)).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
     fill(levelEl, levels);
     fill(yearEl, years);
-    [searchEl, levelEl, yearEl, onlyLocatedEl].forEach((el) => el.addEventListener("input", renderMarkers));
+    fill(provinceEl, provinces);
+    updateCityOptions();
+    [searchEl, levelEl, yearEl, cityEl, onlyLocatedEl].forEach((el) => el.addEventListener("input", renderMarkers));
     levelEl.addEventListener("change", renderMarkers);
     yearEl.addEventListener("change", renderMarkers);
+    provinceEl.addEventListener("change", () => {
+      updateCityOptions();
+      renderMarkers();
+    });
+    cityEl.addEventListener("change", renderMarkers);
     mode2d.addEventListener("click", () => setMode(false));
     mode3d.addEventListener("click", () => setMode(true));
   }
 
   function fill(el, values) {
+    const first = el.options[0];
+    el.innerHTML = "";
+    if (first) el.appendChild(first);
     for (const v of values) {
       const option = document.createElement("option");
       option.value = v;
       option.textContent = v;
       el.appendChild(option);
     }
+  }
+
+  function citiesForProvince(province) {
+    const cities = data.schools
+      .filter((s) => !province || placeProvince(s) === province)
+      .map((s) => placeCity(s))
+      .filter(Boolean);
+    return [...new Set(cities)].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  }
+
+  function updateCityOptions() {
+    const current = cityEl.value;
+    const cities = citiesForProvince(provinceEl.value);
+    fill(cityEl, cities);
+    cityEl.value = cities.includes(current) ? current : "";
   }
 
   function updateMeta() {
@@ -75,13 +104,18 @@
     const kw = searchEl.value.trim().toLowerCase();
     const level = levelEl.value;
     const year = yearEl.value;
+    const province = provinceEl.value;
+    const city = cityEl.value;
     const onlyLocated = onlyLocatedEl.checked;
     return locations.schools.filter((loc) => {
       const s = schoolById(loc.id);
       if (!s) return false;
-      if (kw && !s.name.toLowerCase().includes(kw)) return false;
+      const haystack = `${s.name || ""} ${placeText(s, loc)} ${placeAddress(s, loc)}`.toLowerCase();
+      if (kw && !haystack.includes(kw)) return false;
       if (level && s.level !== level) return false;
       if (year && !(s.data_years || [s.year]).map(String).includes(year)) return false;
+      if (province && placeProvince(s, loc) !== province) return false;
+      if (city && placeCity(s, loc) !== city) return false;
       if (onlyLocated && !loc.lon) return false;
       return true;
     });
@@ -137,14 +171,22 @@
     const planTotal = planRecords.reduce((sum, r) => sum + (parseInt(r["计划数合计"], 10) || 0), 0);
     const majorTotal = planRecords.reduce((sum, r) => sum + ((r["专业列表"] || []).length), 0);
     const located = loc.lat && loc.lon;
+    const mapQuery = `${s.name} ${placeText(s, loc)}`;
     const amap = located
-      ? `https://uri.amap.com/marker?position=${loc.lon},${loc.lat}&name=${encodeURIComponent(s.name)}&src=hb-gaokao-map&coordinate=wgs84&callnative=1`
-      : `https://uri.amap.com/search?keyword=${encodeURIComponent(s.name + " " + (s.region || ""))}`;
-    const baidu = `https://map.baidu.com/search/${encodeURIComponent(s.name + " " + (s.region || ""))}`;
+      ? `https://uri.amap.com/marker?position=${loc.lon},${loc.lat}&name=${encodeURIComponent(mapQuery)}&src=hb-gaokao-map&coordinate=wgs84&callnative=1`
+      : `https://uri.amap.com/search?keyword=${encodeURIComponent(mapQuery)}`;
+    const baidu = `https://map.baidu.com/search/${encodeURIComponent(mapQuery)}`;
     panel.innerHTML = `
       <div class="panel-inner">
         <h2 class="panel-title">${escapeHtml(s.name)}</h2>
-        <div class="panel-sub">${escapeHtml(s.region || "所在地待补充")} ${loc.matched_address ? " · 匹配：" + escapeHtml(loc.matched_address) : ""}</div>
+        <div class="panel-sub">${escapeHtml(placeText(s, loc))}</div>
+        <div class="place-box">
+          <div><span>省份</span><b>${escapeHtml(placeProvince(s, loc) || "-")}</b></div>
+          <div><span>城市</span><b>${escapeHtml(placeCity(s, loc) || "-")}</b></div>
+          <div><span>区县</span><b>${escapeHtml(placeCounty(s, loc) || "-")}</b></div>
+          ${placeAddress(s, loc) ? `<p>匹配地址：${escapeHtml(placeAddress(s, loc))}</p>` : ""}
+          ${placeConfidence(s, loc) !== "high" ? `<p class="warn">该位置来自地图匹配或原始字段，建议以学校官网地址为准。</p>` : ""}
+        </div>
         <div class="badge-row">
           ${badge(s.level)}
           ${badge(s.nature)}
@@ -216,5 +258,44 @@
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function place(s, loc = {}) {
+    return s.place || {
+      province: loc.region || s.region || "",
+      city: loc.city || s.city || "",
+      county: loc.county || "",
+      display: loc.place_display || "",
+      compact: loc.place_compact || "",
+      address: loc.matched_address || "",
+      confidence: loc.place_confidence || "",
+    };
+  }
+
+  function placeProvince(s, loc = {}) {
+    return place(s, loc).province || s.region || loc.region || "";
+  }
+
+  function placeCity(s, loc = {}) {
+    return place(s, loc).city || s.city || loc.city || "";
+  }
+
+  function placeCounty(s, loc = {}) {
+    return place(s, loc).county || loc.county || "";
+  }
+
+  function placeText(s, loc = {}) {
+    const p = place(s, loc);
+    return p.display || p.compact || [placeProvince(s, loc), placeCity(s, loc), placeCounty(s, loc)].filter(Boolean).join(" · ") || "位置待核验";
+  }
+
+  function placeAddress(s, loc = {}) {
+    const p = place(s, loc);
+    const address = p.address || loc.matched_address || "";
+    return address && address !== s.name && address !== placeText(s, loc) ? address : "";
+  }
+
+  function placeConfidence(s, loc = {}) {
+    return place(s, loc).confidence || loc.place_confidence || (placeProvince(s, loc) ? "medium" : "low");
   }
 })();

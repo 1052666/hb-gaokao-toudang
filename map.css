@@ -42,7 +42,7 @@ body {
 }
 .map-tools {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 150px 120px auto auto;
+  grid-template-columns: minmax(260px, 1fr) 140px 110px 130px 130px auto auto;
   gap: 12px;
   align-items: center;
   margin: 0 auto 16px;
@@ -125,6 +125,44 @@ body {
 .panel-inner { padding: 18px; }
 .panel-title { margin: 0; font-size: 22px; color: #111827; }
 .panel-sub { margin: 7px 0 12px; color: #64748b; font-size: 13px; }
+.place-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+.place-box div {
+  min-width: 0;
+}
+.place-box span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+}
+.place-box b {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.place-box p {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.place-box p.warn {
+  border-radius: 6px;
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 7px 8px;
+}
 .badge-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .badge {
   display: inline-flex;
