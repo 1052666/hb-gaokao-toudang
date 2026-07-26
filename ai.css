@@ -247,6 +247,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
   font-size: 14px;
   line-height: 1.75;
 }
+.welcome .welcome-notice {
+  justify-self: center;
+  max-width: 620px;
+  border: 1px solid var(--line-subtle);
+  border-radius: 6px;
+  background: rgba(18, 24, 29, .7);
+  color: var(--text-muted);
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.65;
+}
 .prompt-list {
   display: grid;
   width: min(500px, 100%);
@@ -661,11 +672,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .send-button:disabled { cursor: not-allowed; opacity: .55; }
 .composer-meta {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 14px;
+  gap: 5px 14px;
   padding-top: 6px;
   color: var(--text-muted);
   font-size: 10px;
+  line-height: 1.5;
 }
 .composer-meta span + span::before {
   margin-right: 14px;
