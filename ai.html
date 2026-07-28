@@ -74,8 +74,12 @@
           <span class="runtime-dot" id="runtime-dot"></span>
           <div>
             <strong>AI 志愿助手</strong>
-            <small>MiniMax-M3 · 当前页面数据上下文</small>
+            <small id="mode-subtitle">MiniMax-M3 · 普通模式 · 当前页面数据上下文</small>
           </div>
+        </div>
+        <div class="mode-switch" role="group" aria-label="AI 回答模式">
+          <button type="button" class="active" data-ai-mode="normal" aria-pressed="true">普通</button>
+          <button type="button" data-ai-mode="zhangxuefeng" aria-pressed="false">张雪峰</button>
         </div>
         <nav class="top-nav" aria-label="页面导航">
           <button id="clear-chat" type="button">清空</button>
@@ -86,9 +90,9 @@
 
       <section class="message-scroll" id="message-scroll">
         <div class="welcome" id="welcome">
-          <div class="welcome-icon">AI</div>
-          <h1>把筛选结果交给 AI 看</h1>
-          <p>直接输入分数、科类、批次、专业或学校名，AI 会自动检索全站数据；也可以手动引用学校做精确比较。</p>
+          <div class="welcome-icon" id="welcome-icon">AI</div>
+          <h1 id="welcome-title">把筛选结果交给 AI 看</h1>
+          <p id="welcome-copy">直接输入分数、科类、批次、专业或学校名，AI 会自动检索全站数据；也可以手动引用学校做精确比较。</p>
           <p class="welcome-notice">AI 输出仅供参考，请以湖北省招办、考试院和高校官方最终公布信息为准；历史对话记录保存在本地，刷新、退出或浏览器清理数据后可能会丢失。</p>
           <div class="prompt-list">
             <button type="button" data-prompt="380分历史类专科批，想读护理，湖北省内有哪些学校可以重点看？">按分数自动查<span>›</span></button>
@@ -107,6 +111,7 @@
         </div>
         <div class="composer-meta">
           <span id="context-summary">上下文未就绪</span>
+          <span id="research-status">联网检索待命</span>
           <span>AI 输出仅供参考</span>
           <span>历史对话保存在本地，刷新或退出后可能丢失</span>
         </div>
