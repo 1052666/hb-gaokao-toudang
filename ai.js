@@ -7,13 +7,26 @@
     apiKey: "sk-YiUaF4uq5TraIwbpUs9Knpcx319860UbNROpYe1x0Avy3u8F",
     maxToolRounds: 3,
   };
+  const JINA_READER_API = "https://r.jina.ai/";
+  const RSS2JSON_FALLBACK_API = "https://api.rss2json.com/v1/api.json";
+  const STATIC_SEARCH_TIMEOUT_MS = 20_000;
+  const STATIC_SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+  const STATIC_SEARCH_OFFICIAL_DOMAINS = [
+    "gaokao.chsi.com.cn",
+    "chsi.com.cn",
+    "hbea.edu.cn",
+    "zsxx.e21.cn",
+    "moe.gov.cn",
+    "gov.cn",
+  ];
+  const staticSearchCache = new Map();
 
   const AI_TOOLS = [
     {
       type: "function",
       function: {
         name: "web_search",
-        description: "联网搜索最新或需要交叉核验的事实。内置必应、360 搜索和官方站点定向三个检索通道，返回可核验的网址、标题、摘要和检索时间。",
+        description: "联网搜索最新或需要交叉核验的事实。本地服务使用必应、360 搜索和官方站点定向；GitHub Pages 自动通过 Jina Reader 读取 Yahoo、百度搜索结果，失败时再使用 Bing RSS。返回可核验的网址、标题、摘要和检索时间。",
         parameters: {
           type: "object",
           properties: {
@@ -948,32 +961,334 @@
   async function searchWeb(args) {
     const query = String(args.query || "").trim().slice(0, 500);
     if (!query) return { ok: false, error: "搜索词为空", results: [] };
-    try {
-      const response = await fetch("api/search", {
-        method: "POST",
-        signal: state.controller?.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          official_only: Boolean(args.official_only),
-          max_results: clamp(Number(args.max_results) || 8, 3, 12),
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(response.status === 404
-          ? "本地联网检索服务未启动"
-          : `检索服务 HTTP ${response.status}`);
+    const options = {
+      query,
+      officialOnly: Boolean(args.official_only),
+      maxResults: clamp(Number(args.max_results) || 8, 3, 12),
+    };
+    let localError = "";
+
+    if (!preferStaticSearch()) {
+      try {
+        const response = await fetch("api/search", {
+          method: "POST",
+          signal: state.controller?.signal,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: options.query,
+            official_only: options.officialOnly,
+            max_results: options.maxResults,
+          }),
+        });
+        const result = await response.json().catch(() => null);
+        if (response.ok && result?.ok && result.results?.length) {
+          return { ...result, transport: "local-server" };
+        }
+        localError = result?.error || (response.status === 404
+          ? "同源联网检索服务不存在"
+          : `同源检索服务 HTTP ${response.status}`);
+      } catch (err) {
+        if (err.name === "AbortError") throw err;
+        localError = err.message || "同源联网检索失败";
       }
-      return await response.json();
-    } catch (err) {
-      if (err.name === "AbortError") throw err;
-      return {
-        ok: false,
-        error: `${err.message}；请使用 node local-server.mjs 启动本站`,
-        query,
-        results: [],
-      };
     }
+
+    const staticResult = await searchStaticWeb(options);
+    if (!staticResult.ok && localError) {
+      staticResult.error = `${localError}；静态检索：${staticResult.error || "暂无结果"}`;
+    }
+    return staticResult;
+  }
+
+  function preferStaticSearch() {
+    const host = String(window.location.hostname || "").toLowerCase();
+    return window.location.protocol === "file:" || host === "github.io" || host.endsWith(".github.io");
+  }
+
+  async function searchStaticWeb({ query, officialOnly, maxResults }) {
+    const cacheKey = JSON.stringify([query, officialOnly, maxResults]);
+    const cached = staticSearchCache.get(cacheKey);
+    if (cached && Date.now() - cached.savedAt < STATIC_SEARCH_CACHE_TTL_MS) {
+      return { ...cached.value, cached: true };
+    }
+
+    const signal = state.controller?.signal;
+    const channels = staticSearchChannels(query, officialOnly);
+    const settled = await Promise.allSettled(
+      channels.map((channel) => fetchStaticSearchChannel(channel, signal)),
+    );
+    if (signal?.aborted) throw createAbortError();
+
+    const sourceStatus = settled.map((item, index) => ({
+      name: channels[index].name,
+      ok: item.status === "fulfilled",
+      count: item.status === "fulfilled" ? item.value.length : 0,
+      error: item.status === "rejected" ? String(item.reason?.message || item.reason) : "",
+    }));
+    const combined = settled.flatMap((item) => item.status === "fulfilled" ? item.value : []);
+    if (!combined.length || (officialOnly && !combined.some((item) => item.official))) {
+      const fallback = {
+        name: "必应 RSS 回退",
+        query: channels[0]?.query || query,
+      };
+      try {
+        const fallbackResults = await fetchRssSearch(fallback, signal);
+        combined.push(...fallbackResults);
+        sourceStatus.push({ name: fallback.name, ok: true, count: fallbackResults.length, error: "" });
+      } catch (err) {
+        if (err.name === "AbortError") throw err;
+        sourceStatus.push({ name: fallback.name, ok: false, count: 0, error: err.message || String(err) });
+      }
+    }
+    const results = dedupeStaticResults(combined)
+      .filter((item) => !officialOnly || item.official)
+      .sort((a, b) => Number(b.official) - Number(a.official) || Number(b.year || 0) - Number(a.year || 0))
+      .slice(0, maxResults);
+    const sourcesOk = sourceStatus.filter((item) => item.ok).length;
+    const value = {
+      ok: sourcesOk > 0 && results.length > 0,
+      query,
+      effective_query: channels[0]?.query || query,
+      official_only: officialOnly,
+      fetched_at: new Date().toISOString(),
+      sources_ok: sourcesOk,
+      sources: sourceStatus,
+      results,
+      transport: "static-browser",
+      note: "静态网页通过 Jina Reader 读取 Yahoo 与百度搜索结果；两者都失败时才使用 Bing RSS 回退。搜索摘要只用于发现和交叉核验，不能替代高校及主管部门最终公告。",
+    };
+    if (!value.ok) {
+      const failures = sourceStatus.filter((item) => !item.ok);
+      const noResult = officialOnly
+        ? "已返回网页中没有找到可识别的官方来源"
+        : "检索服务已响应，但没有找到结果";
+      value.error = [
+        noResult,
+        failures.map((item) => `${item.name}: ${item.error}`).join("；"),
+      ].filter(Boolean).join("；");
+    }
+
+    if (staticSearchCache.size >= 40) {
+      staticSearchCache.delete(staticSearchCache.keys().next().value);
+    }
+    staticSearchCache.set(cacheKey, { savedAt: Date.now(), value });
+    return value;
+  }
+
+  function staticSearchChannels(query, officialOnly) {
+    const searchQuery = simplifyStaticSearchQuery(query);
+    const hasOfficialCue = /官方|官网|招生网|考试院|阳光高考/.test(searchQuery);
+    const baiduQuery = officialOnly && !hasOfficialCue ? `${searchQuery} 官方` : searchQuery;
+    return [
+      { name: "Yahoo 网页", engine: "yahoo", query: searchQuery },
+      { name: "百度网页", engine: "baidu", query: baiduQuery },
+    ];
+  }
+
+  function simplifyStaticSearchQuery(query) {
+    const clean = String(query || "")
+      .replace(/\bsite:\S+/gi, " ")
+      .replace(/\b(?:AND|OR|NOT)\b/gi, " ")
+      .replace(/(\d{4})年/g, "$1 ")
+      .replace(/湖北省/g, "湖北")
+      .replace(/[，。！？；：、,.!?;:()[\]{}"'“”‘’]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const ignored = new Set(["计划数", "总人数", "招生人数", "人数", "专业组", "招生专业组", "查询", "核验"]);
+    const tokens = [...new Set(clean.split(" ").filter((token) => token && !ignored.has(token)))];
+    return tokens.slice(0, 5).join(" ").slice(0, 120);
+  }
+
+  async function fetchStaticSearchChannel(channel, signal) {
+    const target = channel.engine === "yahoo"
+      ? new URL("https://search.yahoo.com/search")
+      : new URL("https://www.baidu.com/s");
+    target.searchParams.set(channel.engine === "yahoo" ? "p" : "wd", channel.query);
+    const response = await fetchSearchResponse(`${JINA_READER_API}${target.href}`, signal, "text/plain");
+    const markdown = await response.text();
+    const targetError = markdown.match(/Warning:\s*Target URL returned error\s+(\d{3})/i);
+    if (targetError) throw new Error(`${channel.name} HTTP ${targetError[1]}`);
+
+    const results = channel.engine === "yahoo"
+      ? parseYahooSearch(markdown, channel.name)
+      : parseBaiduSearch(markdown, channel.name);
+    if (!results.length) throw new Error(`${channel.name}未解析到搜索结果`);
+    return results.slice(0, 10);
+  }
+
+  function parseYahooSearch(markdown, provider) {
+    const text = String(markdown || "");
+    const matches = [...text.matchAll(
+      /\[(?:!\[[^\]]*\]\([^)]*\))?([^\]\n]*?)###\s+([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
+    )];
+    return matches.map((match, index) => {
+      const nextIndex = matches[index + 1]?.index ?? text.length;
+      const snippet = cleanSearchMarkdown(
+        text.slice(match.index + match[0].length, nextIndex).replace(/\s+\d+\.\s*$/, ""),
+      );
+      return makeStaticSearchSource({
+        title: match[2],
+        url: match[3],
+        snippet,
+        provider,
+      });
+    }).filter((item) => item.url && item.title);
+  }
+
+  function parseBaiduSearch(markdown, provider) {
+    const text = String(markdown || "");
+    const matches = [...text.matchAll(/^###\s+\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gm)];
+    return matches.map((match, index) => {
+      const nextIndex = matches[index + 1]?.index ?? text.length;
+      const snippet = cleanSearchMarkdown(text.slice(match.index + match[0].length, nextIndex));
+      return makeStaticSearchSource({
+        title: match[1],
+        url: match[2],
+        snippet,
+        provider,
+      });
+    }).filter((item) => item.url && item.title);
+  }
+
+  function makeStaticSearchSource({ title, url, snippet, provider, publishedAt = "" }) {
+    const cleanTitle = cleanSearchMarkdown(title).slice(0, 180);
+    const cleanSnippet = cleanSearchMarkdown(snippet).slice(0, 500);
+    const safeUrl = normalizeSearchUrl(url);
+    const domain = safeHostname(safeUrl);
+    const yearMatch = `${cleanTitle} ${cleanSnippet}`.match(/\b(20(?:2[4-9]|3\d))\b/);
+    return {
+      title: cleanTitle,
+      url: safeUrl,
+      domain,
+      snippet: cleanSnippet,
+      provider,
+      official: isOfficialSearchDomain(domain),
+      year: yearMatch ? Number(yearMatch[1]) : null,
+      published_at: String(publishedAt || ""),
+    };
+  }
+
+  function cleanSearchMarkdown(value) {
+    return String(value || "")
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/^\s*(?:#{1,6}|[-*]|\d+\.)\s+/gm, " ")
+      .replace(/[*_~`]/g, "")
+      .replace(/[\u200b-\u200f\u2060\ufeff]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  async function fetchRssSearch(channel, signal) {
+    const feedUrl = new URL("https://cn.bing.com/search");
+    feedUrl.searchParams.set("q", channel.query);
+    feedUrl.searchParams.set("format", "rss");
+    feedUrl.searchParams.set("mkt", "zh-CN");
+    feedUrl.searchParams.set("setlang", "zh-hans");
+
+    const endpoint = new URL(RSS2JSON_FALLBACK_API);
+    endpoint.searchParams.set("rss_url", feedUrl.href);
+    const response = await fetchSearchResponse(endpoint.href, signal, "application/json");
+    const payload = await response.json();
+    if (payload.status !== "ok" || !Array.isArray(payload.items)) {
+      throw new Error(payload.message || "RSS 搜索返回格式无效");
+    }
+    return payload.items
+      .slice(0, 10)
+      .map((item) => rssItemToSource(item, channel.name))
+      .filter((item) => item.url && item.title);
+  }
+
+  async function fetchSearchResponse(url, signal, accept) {
+    if (signal?.aborted) throw createAbortError();
+    const controller = new AbortController();
+    let timedOut = false;
+    const abortFromParent = () => controller.abort();
+    signal?.addEventListener("abort", abortFromParent, { once: true });
+    const timeout = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, STATIC_SEARCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: accept || "*/*" },
+      });
+      if (!response.ok) throw new Error(`静态检索 HTTP ${response.status}`);
+      return response;
+    } catch (err) {
+      if (signal?.aborted) throw createAbortError();
+      if (timedOut) throw new Error("静态检索请求超时");
+      throw err;
+    } finally {
+      window.clearTimeout(timeout);
+      signal?.removeEventListener("abort", abortFromParent);
+    }
+  }
+
+  function rssItemToSource(item, provider) {
+    return makeStaticSearchSource({
+      title: cleanSearchText(item?.title),
+      url: item?.link || item?.guid,
+      snippet: cleanSearchText(item?.description || item?.content),
+      provider,
+      publishedAt: item?.pubDate,
+    });
+  }
+
+  function cleanSearchText(value) {
+    const documentNode = new DOMParser().parseFromString(String(value || ""), "text/html");
+    return String(documentNode.body?.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function normalizeSearchUrl(value) {
+    try {
+      let raw = String(value || "").trim();
+      const yahooRedirect = raw.match(/\/RU=([^/]+)\/RK=/);
+      if (yahooRedirect && /https?:\/\/r\.search\.yahoo\.com\//i.test(raw)) {
+        raw = decodeURIComponent(yahooRedirect[1]);
+      }
+      const url = new URL(raw);
+      if (!["http:", "https:"].includes(url.protocol)) return "";
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach((key) => {
+        url.searchParams.delete(key);
+      });
+      url.hash = "";
+      return url.href;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function isOfficialSearchDomain(domain) {
+    const host = String(domain || "").toLowerCase();
+    return STATIC_SEARCH_OFFICIAL_DOMAINS.some((item) => host === item || host.endsWith(`.${item}`)) ||
+      host.endsWith(".edu.cn") ||
+      host.endsWith(".gov.cn");
+  }
+
+  function dedupeStaticResults(results) {
+    const seenUrls = new Set();
+    const seenTitles = new Set();
+    const output = [];
+    for (const result of results) {
+      if (!result.url || !result.title) continue;
+      const urlKey = result.url.replace(/\/$/, "").toLowerCase();
+      const titleKey = normalize(result.title).replace(/\s+/g, "");
+      if (seenUrls.has(urlKey) || seenTitles.has(titleKey)) continue;
+      seenUrls.add(urlKey);
+      seenTitles.add(titleKey);
+      output.push(result);
+    }
+    return output;
+  }
+
+  function createAbortError() {
+    const error = new Error("操作已取消");
+    error.name = "AbortError";
+    return error;
   }
 
   async function searchSchoolDataTool(args) {
