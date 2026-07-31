@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="湖北历史类300至370分护理与医学类院校、专业组、专业代码、2025投档位次、2026招生计划、学费与住宿参考。">
+  <title>湖北护理与医学专业择校参考</title>
+  <link rel="stylesheet" href="medical.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-top">
+        <a class="brand" href="index.html">湖北高考数据工具</a>
+        <nav class="site-nav" aria-label="工具导航">
+          <a href="index.html">投档线</a>
+          <a href="yfd_chart.html">一分一段</a>
+          <a href="map.html">地图</a>
+          <a href="ai.html">AI助手</a>
+          <a href="medical.html" aria-current="page">护理医学</a>
+        </nav>
+      </div>
+      <div class="title-row">
+        <div>
+          <p class="eyebrow">2026 湖北 · 普通高考 · 首选历史</p>
+          <h1>300–370 分护理与医学专业择校参考</h1>
+          <p class="site-sub">用 2026 招生计划核对“能报什么”，用 2025 院校专业组投档分和位次判断风险。</p>
+        </div>
+        <button class="print-button" id="print-page" type="button" title="打印或另存为 PDF">打印</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="status-strip" aria-label="数据口径">
+      <strong>先看口径</strong>
+      <span><b>2026：</b>招生计划、专业、计划人数、学费</span>
+      <span><b>2025：</b>院校专业组最低投档分、位次、宿舍公开信息与缺项核对基准</span>
+      <span><b>尚无：</b>2026 院校专业组录取结果</span>
+    </section>
+
+    <section class="critical-note">
+      <div>
+        <strong>这不是“2026 录取分数线”。</strong>
+        2026 年院校专业组投档结果尚未产生；页面只做往年位次情景参考。宿舍及未确定字段统一按 2025 年公开资料核对，并明确标注“校方材料”“第三方参考”或“2025 未检索到”，未检索到不等于学校没有该条件。
+      </div>
+      <a href="#methodology">查看判断方法</a>
+    </section>
+
+    <section class="research-summary" aria-labelledby="summary-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">全量盘点</p>
+          <h2 id="summary-title">湖北省内护理与医学类专科计划</h2>
+        </div>
+        <p id="dataset-scope">数据整理中</p>
+      </div>
+      <div class="summary-grid" id="summary-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="workspace" aria-labelledby="filter-title">
+      <div class="filter-panel">
+        <div class="filter-heading">
+          <div>
+            <p class="section-kicker">按你的情况筛</p>
+            <h2 id="filter-title">输入预估分数</h2>
+          </div>
+          <button class="reset-button" id="reset-filters" type="button">重置</button>
+        </div>
+
+        <label class="score-field" for="score-input">
+          <span>2026 预估分</span>
+          <div class="score-input-wrap">
+            <input id="score-input" type="number" min="300" max="370" step="1" inputmode="numeric" placeholder="例如 350">
+            <span>分</span>
+          </div>
+          <small id="rank-estimate">未填写分数，不自动代入任何默认值</small>
+        </label>
+
+        <div class="filter-grid">
+          <label>
+            <span>学校或专业</span>
+            <input id="search-input" type="search" placeholder="护理、临床、学校名">
+          </label>
+          <label>
+            <span>办学性质</span>
+            <select id="nature-filter">
+              <option value="">全部</option>
+              <option value="公办">公办</option>
+              <option value="民办">民办</option>
+            </select>
+          </label>
+          <label>
+            <span>城市</span>
+            <select id="city-filter">
+              <option value="">全部</option>
+            </select>
+          </label>
+          <label>
+            <span>专业方向</span>
+            <select id="category-filter">
+              <option value="">全部</option>
+            </select>
+          </label>
+          <label>
+            <span>计划类型</span>
+            <select id="plan-filter">
+              <option value="">全部</option>
+              <option value="普通类">普通类</option>
+              <option value="中外合作办学">中外合作办学</option>
+              <option value="乡村振兴">乡村振兴</option>
+              <option value="专本联合培养">专本联合培养</option>
+              <option value="定向培养">定向培养</option>
+            </select>
+          </label>
+          <label>
+            <span>2025 组线范围</span>
+            <select id="line-filter">
+              <option value="">全部</option>
+              <option value="at-most-370">370 分及以下</option>
+              <option value="300-370">300–370 分</option>
+              <option value="above-370">高于 370 分</option>
+              <option value="below-300">低于 300 分</option>
+              <option value="missing">无同组分数</option>
+            </select>
+          </label>
+          <label>
+            <span>排序</span>
+            <select id="sort-filter">
+              <option value="score-asc">2025 组线由低到高</option>
+              <option value="score-desc">2025 组线由高到低</option>
+              <option value="public-first">公办优先</option>
+              <option value="tuition-asc">学费由低到高</option>
+              <option value="name">学校名称</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="quick-filters" aria-label="快捷筛选">
+          <button type="button" data-quick="public-match">公办且组线 ≤ 370</button>
+          <button type="button" data-quick="nursing">只看护理</button>
+          <button type="button" data-quick="clinical">临床/口腔</button>
+          <button type="button" data-quick="private">民办保底参考</button>
+        </div>
+      </div>
+
+      <div class="result-column">
+        <div class="result-toolbar">
+          <div>
+            <strong id="result-count">0 所学校</strong>
+            <span id="result-explanation">显示全部已盘点记录</span>
+          </div>
+          <label class="compact-toggle">
+            <input id="hide-special" type="checkbox">
+            <span>隐藏资格类计划</span>
+          </label>
+        </div>
+        <div class="school-results" id="school-results"></div>
+        <div class="empty-state" id="empty-state" hidden>
+          <strong>没有符合当前条件的记录</strong>
+          <p>放宽城市、专业方向或组线范围后再看。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="analysis-section" id="methodology">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">怎么判断</p>
+          <h2>2026 年的预估方法与边界</h2>
+        </div>
+      </div>
+      <div class="method-grid">
+        <article>
+          <span class="step-number">01</span>
+          <h3>先用位次，不只看分差</h3>
+          <p>2025 同分对应位次用于理解竞争位置。2026 总人数、试卷难度和计划都会变化，正式填报时应替换成 2026 一分一段位次。</p>
+        </article>
+        <article>
+          <span class="step-number">02</span>
+          <h3>组线不是专业线</h3>
+          <p>一个组里可能同时有护理、临床和其他专业。临床医学、口腔医学通常更热门，不能因为总组线够了就认定热门专业一定能录取。</p>
+        </article>
+        <article>
+          <span class="step-number">03</span>
+          <h3>代码每年都要复核</h3>
+          <p>四位院校代码通常较稳定，后两位专业组和组内两位专业代号可能重排。已取得的两位代号在代码下标注年份；缺失处统一写明“2025公开资料未取得”，不拿国标代码冒充。</p>
+        </article>
+        <article>
+          <span class="step-number">04</span>
+          <h3>特殊计划先审资格</h3>
+          <p>乡村振兴、定向村医、专本联合培养、中外合作办学都有独立条件或成本，不能拿其较低分数替代普通类保底线。</p>
+        </article>
+      </div>
+
+      <div class="rank-table-wrap">
+        <div class="subsection-title">
+          <h3>2025 历史类 300–370 分位次对照</h3>
+          <p>来自湖北省教育厅一分一段表，页面只列每 5 分节点。</p>
+        </div>
+        <div class="rank-table" id="rank-table"></div>
+      </div>
+
+      <div class="tier-explanation">
+        <h3>页面中的风险标签</h3>
+        <dl>
+          <div><dt>相对宽裕</dt><dd>输入分比 2025 同组线高 15 分及以上。</dd></div>
+          <div><dt>较匹配</dt><dd>高 5–14 分，仍需看 2026 位次、计划增减和专业热度。</dd></div>
+          <div><dt>可冲</dt><dd>与去年组线相差不超过 5 分，波动风险明显。</dd></div>
+          <div><dt>低于去年组线</dt><dd>低 6 分及以上，不建议作为主要保底。</dd></div>
+        </dl>
+        <p>这些标签只是统一的筛选尺子，不是录取概率。临床医学、口腔医学需额外留出专业热度余量。</p>
+      </div>
+    </section>
+
+    <section class="analysis-section" id="undergraduate-section">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">本科护理与医学</p>
+          <h2>300–370 分不能按本科批填报</h2>
+        </div>
+        <span class="line-badge">2025 本科历史线 442 · 2026 控制线 443</span>
+      </div>
+      <p class="section-intro">
+        下列湖北院校有历史类护理、中医等本科计划，但 300–370 分低于本科控制线。把它们列出来是为了区分“本科院校里的专科专业”和“真正的本科专业”，不是推荐该分段冲本科。
+      </p>
+      <div class="undergrad-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>院校</th>
+              <th>湖北院校代码</th>
+              <th>本科组别参考</th>
+              <th>护理/医学方向</th>
+              <th>学费参考</th>
+            </tr>
+          </thead>
+          <tbody id="undergrad-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="analysis-section" id="code-guide">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">代码说明</p>
+          <h2>填报时到底看哪一种代码</h2>
+        </div>
+      </div>
+      <div class="code-guide-grid">
+        <div>
+          <code>C571</code>
+          <h3>湖北院校代码</h3>
+          <p>例如随州职业技术学院。它不是教育部五位国标院校代码。</p>
+        </div>
+        <div>
+          <code>C57101</code>
+          <h3>院校专业组代码</h3>
+          <p>院校代码加两位组号。平行志愿按院校专业组投档。</p>
+        </div>
+        <div>
+          <code>02</code>
+          <h3>湖北组内专业代号</h3>
+          <p>例如随州职院 2026 历史第01组护理。页面在代号下方标注来源年份；未取得时按2025公开资料核对结果明确显示。</p>
+        </div>
+        <div>
+          <code>520201</code>
+          <h3>国标专业代码</h3>
+          <p>护理专业的全国目录代码，用来确认专业身份，不能直接代替湖北组内专业代号。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="analysis-section" id="sources">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">可追溯来源</p>
+          <h2>官方与交叉核验链接</h2>
+        </div>
+        <span id="source-count"></span>
+      </div>
+      <div class="source-list" id="source-list"></div>
+    </section>
+
+    <section class="final-warning">
+      <strong>数据仅供参考，不作为志愿填报、录取或职业资格判断依据。</strong>
+      <p>宿舍环境统一采用2025级新生材料、2025学年收费目录或明确标注的2025第三方资料；这不是2026住宿承诺。正式填报前，请逐项核对《2026 年湖北招生考试》第 22 期、湖北省招生数智综合平台、学校招生章程和录取通知。</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>整理范围：湖北省内院校 · 湖北普通高考首选历史 · 2026 计划 / 2025 分数位次参考</p>
+    <p>更新日期：2026-07-31 · 数据仅供参考</p>
+  </footer>
+
+  <button class="back-to-top" id="back-to-top" type="button" title="回到顶部" hidden>↑</button>
+
+  <script src="medical-data.js"></script>
+  <script src="medical.js"></script>
+</body>
+</html>
