@@ -428,6 +428,45 @@
     .footnote p { margin: 0 0 4px; }
     .footnote strong { color: #b9c9cd; }
 
+    .supplement-section {
+      margin-top: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+    }
+
+    .supplement-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 18px;
+      margin-bottom: 12px;
+    }
+
+    .supplement-head h2 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.25;
+    }
+
+    .supplement-head p {
+      max-width: 900px;
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .supplement-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .supplement-status {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .loading {
       padding: 54px 20px;
       color: var(--muted);
@@ -442,6 +481,7 @@
       .control.search { grid-column: 1 / -1; }
       .control-actions { grid-column: 1 / -1; align-items: center; }
       .brief { grid-template-columns: 1fr; }
+      .supplement-head { align-items: flex-start; flex-direction: column; }
     }
 
     @media (max-width: 560px) {
@@ -558,6 +598,52 @@
           <tbody id="rows"></tbody>
         </table>
         <div id="empty" class="empty">没有符合当前筛选条件的专业组。</div>
+      </div>
+    </section>
+
+    <section class="supplement-section" aria-label="湖北补充专业组">
+      <div class="supplement-head">
+        <div>
+          <p class="eyebrow">湖北补充专区 · 独立查看与导出</p>
+          <h2>另外 15 组湖北公办专科</h2>
+          <p>从湖北 24 组候选中单独抽出位次更靠后的 15 组，不增加主表志愿序号；每组仍可展开查看 2026 全部专业。</p>
+        </div>
+        <div class="supplement-actions">
+          <button class="button primary" id="supplement-export-png" type="button" title="下载湖北补充区概要图片">导出补充 PNG</button>
+        </div>
+      </div>
+      <div class="result-line">
+        <span>补充区已显示 <strong id="supplement-count">--</strong> 个专业组</span>
+        <span class="supplement-status" id="supplement-status">图片只展示概要，专业明细请展开查看</span>
+      </div>
+      <div class="table-shell" aria-label="湖北补充专业组表">
+        <div class="table-scroll">
+          <table>
+            <colgroup>
+              <col class="col-order">
+              <col class="col-school">
+              <col class="col-code">
+              <col class="col-rank">
+              <col class="col-plan">
+              <col class="col-focus">
+              <col class="col-life">
+              <col class="col-major">
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">顺序</th>
+                <th scope="col">学校 / 所在地</th>
+                <th scope="col">院校代码 / 专业组</th>
+                <th scope="col">2025 参考位次</th>
+                <th scope="col">2026 计划</th>
+                <th scope="col">重点查看</th>
+                <th scope="col">宿舍 / 位置</th>
+                <th scope="col">专业组全部专业</th>
+              </tr>
+            </thead>
+            <tbody id="supplement-rows"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -764,10 +850,10 @@
 
       const setAllDetails = (open) => document.querySelectorAll('details.major-details').forEach((detail) => { detail.open = open; });
 
-      const exportPng = () => {
-        const sourceRows = [...document.querySelectorAll('#rows tr')].filter((row) => !row.hidden);
+      const exportPng = (rowSelector = '#rows', statusSelector = '#data-status', filenamePrefix = '湖北历史类稳妥志愿') => {
+        const sourceRows = [...document.querySelectorAll(`${rowSelector} tr`)].filter((row) => !row.hidden);
         if (!sourceRows.length) {
-          $('#data-status').textContent = '当前筛选没有可导出的专业组';
+          $(statusSelector).textContent = '当前筛选没有可导出的专业组';
           return;
         }
 
@@ -886,19 +972,19 @@
 
         canvas.toBlob((blob) => {
           if (!blob) {
-            $('#data-status').textContent = 'PNG 生成失败，请重试';
+            $(statusSelector).textContent = 'PNG 生成失败，请重试';
             return;
           }
           const stamp = new Date();
           const fileDate = [stamp.getFullYear(), String(stamp.getMonth() + 1).padStart(2, '0'), String(stamp.getDate()).padStart(2, '0')].join('');
           const link = document.createElement('a');
           link.href = URL.createObjectURL(blob);
-          link.download = `湖北历史类稳妥志愿-${fileDate}.png`;
+          link.download = `${filenamePrefix}-${fileDate}.png`;
           link.click();
           setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-          const originalStatus = $('#data-status').textContent;
-          $('#data-status').textContent = `PNG 已生成：${sourceRows.length} 个专业组`;
-          setTimeout(() => { $('#data-status').textContent = originalStatus; }, 3500);
+          const originalStatus = $(statusSelector).textContent;
+          $(statusSelector).textContent = `PNG 已生成：${sourceRows.length} 个专业组`;
+          setTimeout(() => { $(statusSelector).textContent = originalStatus; }, 3500);
         }, 'image/png');
       };
 
@@ -908,6 +994,10 @@
           if (!response.ok) throw new Error(`data.json ${response.status}`);
           const data = await response.json();
           const rows = makeRows(data);
+          const supplementRows = rows
+            .filter((row) => row.isHubei && !row.strict)
+            .sort((a, b) => Number(!a.target) - Number(!b.target) || Number(!a.related) - Number(!b.related) || a.rank - b.rank)
+            .slice(0, 15);
           const strictCount = rows.filter((row) => row.strict).length;
           const targetCount = rows.filter((row) => row.target).length;
           const hubeiCount = rows.filter((row) => row.isHubei).length;
@@ -917,6 +1007,9 @@
           $('#target-groups').textContent = targetCount;
           $('#data-status').textContent = `已载入 ${rows.length} 组 · 湖北 ${hubeiCount} 组 · 福建 ${rows.length - hubeiCount} 组`;
           $('#rows').innerHTML = rows.map(rowHtml).join('');
+          $('#supplement-rows').innerHTML = supplementRows.map(rowHtml).join('');
+          $('#supplement-count').textContent = supplementRows.length;
+          $('#supplement-status').textContent = `从湖北 ${hubeiCount} 组中独立抽取 · 位次更靠后 · 不重复计算主表序号`;
           $('#loading').hidden = true;
           $('#table-scroll').hidden = false;
           applyFilters();
@@ -927,6 +1020,7 @@
           $('#expand-all').addEventListener('click', () => setAllDetails(true));
           $('#collapse-all').addEventListener('click', () => setAllDetails(false));
           $('#export-png').addEventListener('click', exportPng);
+          $('#supplement-export-png').addEventListener('click', () => exportPng('#supplement-rows', '#supplement-status', '湖北公办补充专业组'));
         } catch (error) {
           $('#loading').textContent = `本地数据加载失败：${error.message}`;
           $('#data-status').textContent = '请通过本地服务器访问本页';
