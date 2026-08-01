@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="湖北历史类专科稳妥志愿专业组筛选，重点查看智慧健康养老服务与管理专业。">
+  <title>湖北历史类稳妥志愿专业组</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #071015;
+      --panel: #0d171d;
+      --panel-2: #101d24;
+      --line: #24343d;
+      --line-soft: #1b2a31;
+      --text: #eef5f7;
+      --muted: #91a7ae;
+      --cyan: #63e1df;
+      --cyan-soft: rgba(99, 225, 223, .12);
+      --amber: #f1c56a;
+      --amber-soft: rgba(241, 197, 106, .13);
+      --green: #70d7a0;
+      --green-soft: rgba(112, 215, 160, .12);
+      --red: #f08b83;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background: var(--bg);
+      font: 14px/1.55 "Microsoft YaHei", "PingFang SC", sans-serif;
+    }
+
+    a { color: inherit; }
+    button, input, select { font: inherit; }
+    button, select, input { border-radius: 6px; }
+
+    .page-shell {
+      width: min(1800px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 26px 0 48px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--cyan);
+      font-size: 12px;
+      letter-spacing: .04em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 860px;
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .nav-links a,
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 0 13px;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: #0a141a;
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color .18s ease, background .18s ease, color .18s ease;
+    }
+
+    .nav-links a:hover,
+    .button:hover,
+    .button:focus-visible {
+      border-color: var(--cyan);
+      background: var(--cyan-soft);
+      color: var(--cyan);
+      outline: 0;
+    }
+
+    .button.primary {
+      border-color: rgba(99, 225, 223, .58);
+      color: var(--cyan);
+      background: var(--cyan-soft);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--text);
+      font-size: 25px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .brief {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 15px 17px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(99, 225, 223, .26);
+      background: #0b1a1e;
+    }
+
+    .brief strong { color: var(--cyan); }
+    .brief p { margin: 0; color: #bed1d5; }
+    .brief small { color: var(--muted); }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.6fr) repeat(3, minmax(150px, .7fr)) auto;
+      gap: 10px;
+      padding: 13px;
+      margin-bottom: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .control {
+      min-width: 0;
+    }
+
+    .control label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .control input,
+    .control select {
+      width: 100%;
+      height: 38px;
+      padding: 0 10px;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: #0b151b;
+      outline: 0;
+    }
+
+    .control input:focus,
+    .control select:focus {
+      border-color: var(--cyan);
+    }
+
+    .control-actions {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .control-actions .button { height: 38px; white-space: nowrap; }
+
+    .result-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 10px 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .result-line strong { color: var(--text); }
+
+    .table-shell {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1480px;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+
+    col.col-order { width: 78px; }
+    col.col-school { width: 235px; }
+    col.col-code { width: 175px; }
+    col.col-rank { width: 145px; }
+    col.col-plan { width: 115px; }
+    col.col-focus { width: 245px; }
+    col.col-life { width: 220px; }
+    col.col-major { width: 285px; }
+
+    th, td {
+      padding: 13px 12px;
+      vertical-align: top;
+      text-align: left;
+      border-bottom: 1px solid var(--line-soft);
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      color: #b8cbd0;
+      background: #101d24;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover { background: rgba(99, 225, 223, .035); }
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .order-number {
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan);
+      border: 1px solid rgba(99, 225, 223, .38);
+      background: var(--cyan-soft);
+      font-weight: 700;
+    }
+
+    .tier {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .school-name {
+      display: block;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .school-meta,
+    .location,
+    .subline {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .school-meta { margin-top: 5px; }
+    .location { margin-top: 4px; color: #bdd0d4; }
+
+    .code-main,
+    .rank-main,
+    .plan-main {
+      display: block;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .code-main { color: var(--amber); font-family: Consolas, monospace; }
+    .rank-main { font-size: 17px; }
+    .rank-score { color: var(--muted); font-size: 12px; }
+    .plan-main { color: var(--green); font-size: 17px; }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 1px 7px;
+      border: 1px solid var(--line);
+      color: #b9c9cd;
+      background: #0a151b;
+      font-size: 11px;
+    }
+
+    .tag.target {
+      color: var(--cyan);
+      border-color: rgba(99, 225, 223, .45);
+      background: var(--cyan-soft);
+    }
+
+    .tag.related {
+      color: var(--amber);
+      border-color: rgba(241, 197, 106, .4);
+      background: var(--amber-soft);
+    }
+
+    .focus-text {
+      margin: 0;
+      color: #d8e5e7;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .focus-text b { color: var(--cyan); font-weight: 600; }
+    .life-line { margin: 0 0 7px; color: #c8d8da; font-size: 12px; }
+    .life-line:last-child { margin-bottom: 0; }
+    .life-label { color: var(--muted); }
+
+    details.major-details {
+      border: 1px solid var(--line);
+      background: #0b161c;
+    }
+
+    details.major-details[open] { border-color: rgba(99, 225, 223, .38); }
+
+    details.major-details summary {
+      padding: 9px 10px;
+      color: var(--cyan);
+      cursor: pointer;
+      list-style: none;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    details.major-details summary::-webkit-details-marker { display: none; }
+    details.major-details summary::before { content: "+"; margin-right: 7px; color: var(--muted); }
+    details.major-details[open] summary::before { content: "−"; }
+
+    .major-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      padding: 0 9px 9px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .major-item {
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr);
+      gap: 7px;
+      padding: 7px 8px;
+      border: 1px solid var(--line-soft);
+      background: #0e1a20;
+    }
+
+    .major-item.target-major {
+      border-color: rgba(99, 225, 223, .42);
+      background: rgba(99, 225, 223, .08);
+    }
+
+    .major-code { color: var(--amber); font: 11px/1.5 Consolas, monospace; }
+    .major-name { color: var(--text); font-size: 12px; }
+    .major-meta { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+
+    .row-source {
+      margin: 9px 10px 10px;
+      color: #71868c;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .empty {
+      display: none;
+      padding: 44px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .empty.show { display: block; }
+
+    .footnote {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      padding: 14px 2px 0;
+      color: #81979d;
+      font-size: 12px;
+    }
+
+    .footnote p { margin: 0 0 4px; }
+    .footnote strong { color: #b9c9cd; }
+
+    .loading {
+      padding: 54px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .topbar { flex-direction: column; }
+      .nav-links { justify-content: flex-start; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .control.search { grid-column: 1 / -1; }
+      .control-actions { grid-column: 1 / -1; align-items: center; }
+      .brief { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page-shell { width: min(100% - 20px, 1800px); padding-top: 16px; }
+      h1 { font-size: 25px; }
+      .metrics { gap: 8px; }
+      .metric { padding: 12px; }
+      .metric strong { font-size: 21px; }
+      .controls { grid-template-columns: 1fr; padding: 10px; }
+      .control.search,
+      .control-actions { grid-column: auto; }
+      .control-actions { align-items: stretch; }
+      .control-actions .button { flex: 1; }
+      .footnote { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">2026 招生计划 · 2025 参考位次 · 历史类 · 普通类</p>
+        <h1>湖北优先的稳妥志愿专业组</h1>
+        <p class="subtitle">以 2025 年位次 <strong>87109–90109</strong> 为主筛选，重点查看“智慧健康养老服务与管理”，再看同一专业组的全部专业；湖北不足时只补福建公办组。</p>
+      </div>
+      <nav class="nav-links" aria-label="页面导航">
+        <a href="index.html">返回首页</a>
+        <a href="medical.html">护理医学筛选</a>
+        <a href="ai.html">AI 助手</a>
+      </nav>
+    </header>
+
+    <section class="metrics" aria-label="筛选统计">
+      <div class="metric"><strong id="total-groups">--</strong><span>当前入选专业组（不超过 30）</span></div>
+      <div class="metric"><strong id="hubei-groups">--</strong><span>湖北公办组</span></div>
+      <div class="metric"><strong id="strict-groups">--</strong><span>严格位次区间内湖北组</span></div>
+      <div class="metric"><strong id="target-groups">--</strong><span>含智慧健康养老服务与管理</span></div>
+    </section>
+
+    <section class="brief">
+      <p><strong>使用顺序：</strong>先看湖北严格区间内的组，再看湖北更靠后位次的稳妥补位，最后才看福建补充。每行的“展开全部专业”会列出该专业组的 2026 招生专业、专业代码、计划数、学费和学制。</p>
+      <small id="data-status">正在加载本地数据…</small>
+    </section>
+
+    <section class="controls" aria-label="筛选条件">
+      <div class="control search">
+        <label for="search">搜索学校、城市、专业或代码</label>
+        <input id="search" type="search" placeholder="例如：智慧养老、随州、590302、C571">
+      </div>
+      <div class="control">
+        <label for="region-filter">地区</label>
+        <select id="region-filter">
+          <option value="all">湖北 + 福建</option>
+          <option value="湖北省">只看湖北</option>
+          <option value="福建省">只看福建补充</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="focus-filter">专业重点</label>
+        <select id="focus-filter">
+          <option value="all">全部专业组</option>
+          <option value="target">含智慧健康养老</option>
+          <option value="related">含护理/医学/康养相关</option>
+          <option value="other">其他专业组</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="band-filter">位次范围</label>
+        <select id="band-filter">
+          <option value="all">全部入选</option>
+          <option value="strict">87109–90109</option>
+          <option value="safe">90110 以后补位</option>
+          <option value="fujian">福建补充</option>
+        </select>
+      </div>
+      <div class="control-actions">
+        <button class="button" id="expand-all" type="button">展开全部专业</button>
+        <button class="button" id="collapse-all" type="button">收起专业</button>
+      </div>
+    </section>
+
+    <div class="result-line">
+      <span>已显示 <strong id="visible-count">--</strong> 个专业组</span>
+      <span>默认顺序：湖北优先 · 严格区间优先 · 目标专业优先 · 位次由前到后</span>
+    </div>
+
+    <section class="table-shell" aria-label="志愿专业组表">
+      <div id="loading" class="loading">正在读取本地招生数据…</div>
+      <div id="table-scroll" class="table-scroll" hidden>
+        <table>
+          <colgroup>
+            <col class="col-order">
+            <col class="col-school">
+            <col class="col-code">
+            <col class="col-rank">
+            <col class="col-plan">
+            <col class="col-focus">
+            <col class="col-life">
+            <col class="col-major">
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">顺序</th>
+              <th scope="col">学校 / 所在地</th>
+              <th scope="col">院校代码 / 专业组</th>
+              <th scope="col">2025 参考位次</th>
+              <th scope="col">2026 计划</th>
+              <th scope="col">重点查看</th>
+              <th scope="col">宿舍 / 位置</th>
+              <th scope="col">专业组全部专业</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div id="empty" class="empty">没有符合当前筛选条件的专业组。</div>
+      </div>
+    </section>
+
+    <footer class="footnote">
+      <div>
+        <p><strong>年份标注：</strong>位次、投档分为 2025 参考数据；专业组计划、专业代码、计划数、学费为 2026 招生计划数据。2026 录取结果尚不能用本页替代。</p>
+        <p><strong>数据口径：</strong>只保留湖北、福建的公办专科历史类普通组；未匹配到 2025 位次和 2026 计划的组不放入表内。</p>
+      </div>
+      <div>学费单位：元/年 · 学制按 2026 计划记录</div>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const HISTORY = '历史类';
+      const PUBLIC = '公办';
+      const TARGET = '智慧健康养老服务与管理';
+      const STRICT_MIN = 87109;
+      const STRICT_MAX = 90109;
+      const HUBEI_MAX = 115000;
+      const FUJIAN_MIN = 90000;
+      const FUJIAN_MAX = 140000;
+
+      const hubeiCodes = {
+        '随州职业技术学院': 'C571',
+        '三峡旅游职业技术学院': 'C511',
+        '襄阳汽车职业技术学院': 'C573',
+        '仙桃职业学院': 'C533',
+        '荆州理工职业学院': 'C507',
+        '湖北工业职业技术学院': 'C506',
+        '湖北艺术职业学院': 'C535',
+        '宜昌科技职业学院': 'C581',
+        '天门职业学院': 'C575',
+        '襄阳科技职业学院': 'C580',
+        '江汉艺术职业学院': 'C551',
+        '湖北黄冈应急管理职业技术学院': 'C552',
+        '荆门通用航空职业技术学院': 'C582',
+        '恩施职业技术学院': 'C528'
+      };
+
+      const dormNotes = {
+        '随州职业技术学院': '有空调公寓项目；房型按楼栋分配',
+        '三峡旅游职业技术学院': '4/6 人间；空调、独卫按楼栋',
+        '仙桃职业学院': '4/6/8 人空调间；房型按宿舍分配',
+        '荆州理工职业学院': '4/6 人间；空调、独卫按楼栋',
+        '宜昌科技职业学院': '4/6 人间；空调、独卫按楼栋',
+        '天门职业学院': '4/6/8 人间；空调、独卫按楼栋',
+        '襄阳汽车职业技术学院': '4/6 人间；部分楼栋有空调',
+        '湖北工业职业技术学院': '4/6 人间；空调、独卫按宿舍楼',
+        '湖北艺术职业学院': '宿舍以校方安排为准；优先核对空调',
+        '襄阳科技职业学院': '宿舍以校方安排为准；优先核对空调',
+        '江汉艺术职业学院': '宿舍以校方安排为准；优先核对空调',
+        '湖北黄冈应急管理职业技术学院': '4/6 人间；空调、独卫按楼栋',
+        '荆门通用航空职业技术学院': '4/6 人间；空调、独卫按楼栋',
+        '恩施职业技术学院': '4/6 人间；空调、独卫按楼栋'
+      };
+
+      const medicalWords = ['护理', '临床医学', '医学', '康复', '药学', '健康', '养老', '老年', '助产', '口腔'];
+      const $ = (selector) => document.querySelector(selector);
+      const normalize = (value) => String(value ?? '').replace(/[（）()\s]/g, '');
+      const number = (value) => Number(String(value ?? '').replace(/,/g, '')) || 0;
+      const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[char]));
+      const formatNumber = (value) => number(value).toLocaleString('zh-CN');
+      const groupCode = (value) => normalize(value).replace(/^第/, '') || '--';
+      const isOrdinaryReference = (record) => record && record['数据类型'] === '2025参考投档线'
+        && String(record['年份']) === '2025'
+        && record['科类'] === HISTORY
+        && record['计划类别'] === '普通类'
+        && record['批次'] === '专科批'
+        && number(record['位次']) > 0;
+      const isOrdinaryPlan = (record, group) => record && record['数据类型'] === '2026招生计划'
+        && String(record['年份']) === '2026'
+        && record['科类'] === HISTORY
+        && record['计划类别'] === '普通类'
+        && normalize(record['专业组名称']) === normalize(group);
+
+      const hasTargetMajor = (majors) => majors.some((major) => String(major['专业名称'] || '').includes(TARGET));
+      const hasRelatedMajor = (majors) => majors.some((major) => medicalWords.some((word) => String(major['专业名称'] || '').includes(word)));
+
+      const dormText = (school) => dormNotes[school.name] || (school.region === '福建省'
+        ? '4/6 人间；空调、独卫按校区核对'
+        : '宿舍以校方安排为准；优先核对空调');
+      const cityText = (school) => school.place && school.place.county && school.place.city === '省直辖县级行政区划'
+        ? school.place.county
+        : (school.city || '');
+      const placeText = (school) => school.place && school.place.county && school.place.city === '省直辖县级行政区划'
+        ? `${school.place.province || school.region} · ${school.place.county}`
+        : (school.place && school.place.display ? school.place.display : `${school.region || ''} · ${cityText(school)}`);
+
+      const makeRows = (data) => {
+        const rows = [];
+        for (const school of data.schools || []) {
+          const isHubei = school.region === '湖北省';
+          const isFujian = school.region === '福建省';
+          if (!isHubei && !isFujian) continue;
+          if (school.nature !== PUBLIC || !String(school.level || '').includes('专科')) continue;
+
+          const min = isHubei ? STRICT_MIN : FUJIAN_MIN;
+          const max = isHubei ? HUBEI_MAX : FUJIAN_MAX;
+          const refs = (school.records || []).filter((record) => isOrdinaryReference(record)
+            && number(record['位次']) >= min && number(record['位次']) <= max);
+          const seen = new Set();
+
+          for (const ref of refs) {
+            const group = groupCode(ref['专业组名称']);
+            const key = school.id + '|' + group;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const plan = (school.records || []).find((record) => isOrdinaryPlan(record, ref['专业组名称']));
+            if (!plan || !Array.isArray(plan['专业列表']) || !plan['专业列表'].length) continue;
+            const majors = plan['专业列表'];
+            const target = hasTargetMajor(majors);
+            const related = hasRelatedMajor(majors);
+            const rank = number(ref['位次']);
+            rows.push({
+              school,
+              ref,
+              plan,
+              majors,
+              province: school.region,
+              isHubei,
+              strict: isHubei && rank >= STRICT_MIN && rank <= STRICT_MAX,
+              target,
+              related,
+              rank,
+              score: number(ref['投档线']),
+              group,
+              institutionCode: isHubei ? hubeiCodes[school.name] || '湖北代码待核' : '福建省代码见当年志愿表'
+            });
+          }
+        }
+
+        rows.sort((a, b) => {
+          const regionOrder = Number(!a.isHubei) - Number(!b.isHubei);
+          const bandOrder = Number(!a.strict) - Number(!b.strict);
+          const targetOrder = Number(!a.target) - Number(!b.target);
+          const relatedOrder = Number(!a.related) - Number(!b.related);
+          return regionOrder || bandOrder || targetOrder || relatedOrder || a.rank - b.rank || a.school.name.localeCompare(b.school.name, 'zh-CN');
+        });
+        return rows;
+      };
+
+      const focusSummary = (row) => {
+        const targetMajors = row.majors.filter((major) => String(major['专业名称'] || '').includes(TARGET));
+        const relatedMajors = row.majors.filter((major) => medicalWords.some((word) => String(major['专业名称'] || '').includes(word)));
+        const targetText = targetMajors.map((major) => `${major['专业名称']} ${major['计划数'] || 0}人`).join('、');
+        const relatedText = relatedMajors.filter((major) => !targetMajors.includes(major)).slice(0, 4).map((major) => major['专业名称']).join('、');
+        if (targetText) return `<b>${escapeHtml(targetText)}</b>${relatedText ? `<span class="subline">相关：${escapeHtml(relatedText)}</span>` : ''}`;
+        if (relatedText) return `<span class="subline">相关：${escapeHtml(relatedText)}</span>`;
+        return '<span class="subline">本组未检出目标/医学关键词，可展开查看全部专业</span>';
+      };
+
+      const majorListHtml = (row) => row.majors.map((major) => {
+        const name = String(major['专业名称'] || '未命名专业');
+        const isTarget = name.includes(TARGET);
+        const fee = major['学费'] ? `${escapeHtml(major['学费'])}${escapeHtml(major['学费单位'] || '元')}/年` : '学费未列';
+        const plan = major['计划数'] || '—';
+        const length = major['学制'] || '—';
+        return `<div class="major-item${isTarget ? ' target-major' : ''}"><span class="major-code">${escapeHtml(major['专业代码'] || '—')}</span><span class="major-name">${escapeHtml(name)}<span class="major-meta">计划 ${escapeHtml(plan)} 人 · ${fee} · 学制 ${escapeHtml(length)}</span></span></div>`;
+      }).join('');
+
+      const rowHtml = (row, index) => {
+        const school = row.school;
+        const place = placeText(school);
+        const code = row.isHubei ? `${row.institutionCode}${row.group}` : row.institutionCode;
+        const tier = row.isHubei ? (row.strict ? '湖北 · 区间内' : '湖北 · 稳妥补位') : '福建 · 补充';
+        const aliases = row.target ? ['智慧养老服务与管理', '智慧养老'] : [];
+        const searchText = [school.name, school.city, school.region, row.group, row.institutionCode, ...aliases, ...row.majors.map((major) => `${major['专业代码']} ${major['专业名称']}`)].join(' ').toLowerCase();
+        const focus = row.target ? 'target' : row.related ? 'related' : 'other';
+        const band = row.isHubei ? (row.strict ? 'strict' : 'safe') : 'fujian';
+        return `<tr data-region="${escapeHtml(row.province)}" data-focus="${focus}" data-band="${band}" data-search="${escapeHtml(searchText)}">
+          <td><span class="order-number">${String(index + 1).padStart(2, '0')}</span><span class="tier">${tier}</span></td>
+          <td><strong class="school-name">${escapeHtml(school.name)}</strong><span class="school-meta">${escapeHtml(school.nature)} · 专科 · ${escapeHtml(cityText(school))}</span><span class="location">${escapeHtml(place)}</span></td>
+          <td><span class="code-main">${escapeHtml(code)}</span><span class="subline">专业组 ${escapeHtml(row.group)}</span><span class="subline">${escapeHtml(row.plan['选科要求'] || '首选历史')}</span></td>
+          <td><strong class="rank-main">${formatNumber(row.rank)}</strong><span class="subline">2025 参考位次</span><span class="rank-score">参考分 ${formatNumber(row.score)}</span></td>
+          <td><strong class="plan-main">${formatNumber(row.plan['计划数合计'])}</strong><span class="subline">2026 计划数</span><span class="subline">${row.majors.length} 个专业</span></td>
+          <td><div class="tag-row">${row.target ? '<span class="tag target">重点专业</span>' : ''}${row.related ? '<span class="tag related">医学/康养相关</span>' : ''}</div><p class="focus-text">${focusSummary(row)}</p></td>
+          <td><p class="life-line"><span class="life-label">宿舍：</span>${escapeHtml(dormText(school))}</p><p class="life-line"><span class="life-label">交通：</span>按校区位置核对</p></td>
+          <td><details class="major-details"><summary>展开全部 ${row.majors.length} 个专业</summary><div class="major-list">${majorListHtml(row)}</div><p class="row-source">专业、代码、计划数、学费：2026 招生计划记录；位次：2025 参考投档线记录。</p></details></td>
+        </tr>`;
+      };
+
+      const applyFilters = () => {
+        const query = String($('#search').value || '').trim().toLowerCase();
+        const region = $('#region-filter').value;
+        const focus = $('#focus-filter').value;
+        const band = $('#band-filter').value;
+        let visible = 0;
+        document.querySelectorAll('#rows tr').forEach((row) => {
+          const matches = (!query || row.dataset.search.includes(query))
+            && (region === 'all' || row.dataset.region === region)
+            && (focus === 'all' || row.dataset.focus === focus || (focus === 'related' && row.dataset.focus === 'target'))
+            && (band === 'all' || row.dataset.band === band);
+          row.hidden = !matches;
+          if (matches) visible += 1;
+        });
+        $('#visible-count').textContent = visible;
+        $('#empty').classList.toggle('show', visible === 0);
+      };
+
+      const setAllDetails = (open) => document.querySelectorAll('details.major-details').forEach((detail) => { detail.open = open; });
+
+      const init = async () => {
+        try {
+          const response = await fetch('data.json', { cache: 'no-store' });
+          if (!response.ok) throw new Error(`data.json ${response.status}`);
+          const data = await response.json();
+          const rows = makeRows(data);
+          const strictCount = rows.filter((row) => row.strict).length;
+          const targetCount = rows.filter((row) => row.target).length;
+          const hubeiCount = rows.filter((row) => row.isHubei).length;
+          $('#total-groups').textContent = rows.length;
+          $('#hubei-groups').textContent = hubeiCount;
+          $('#strict-groups').textContent = strictCount;
+          $('#target-groups').textContent = targetCount;
+          $('#data-status').textContent = `已载入 ${rows.length} 组 · 湖北 ${hubeiCount} 组 · 福建 ${rows.length - hubeiCount} 组`;
+          $('#rows').innerHTML = rows.map(rowHtml).join('');
+          $('#loading').hidden = true;
+          $('#table-scroll').hidden = false;
+          applyFilters();
+          $('#search').addEventListener('input', applyFilters);
+          $('#region-filter').addEventListener('change', applyFilters);
+          $('#focus-filter').addEventListener('change', applyFilters);
+          $('#band-filter').addEventListener('change', applyFilters);
+          $('#expand-all').addEventListener('click', () => setAllDetails(true));
+          $('#collapse-all').addEventListener('click', () => setAllDetails(false));
+        } catch (error) {
+          $('#loading').textContent = `本地数据加载失败：${error.message}`;
+          $('#data-status').textContent = '请通过本地服务器访问本页';
+        }
+      };
+
+      init();
+    })();
+  </script>
+</body>
+</html>
