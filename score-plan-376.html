@@ -520,6 +520,7 @@
       <div class="control-actions">
         <button class="button" id="expand-all" type="button">展开全部专业</button>
         <button class="button" id="collapse-all" type="button">收起专业</button>
+        <button class="button primary" id="export-png" type="button" title="下载当前筛选结果的概要图片">导出 PNG</button>
       </div>
     </section>
 
@@ -763,6 +764,144 @@
 
       const setAllDetails = (open) => document.querySelectorAll('details.major-details').forEach((detail) => { detail.open = open; });
 
+      const exportPng = () => {
+        const sourceRows = [...document.querySelectorAll('#rows tr')].filter((row) => !row.hidden);
+        if (!sourceRows.length) {
+          $('#data-status').textContent = '当前筛选没有可导出的专业组';
+          return;
+        }
+
+        const columns = [
+          { title: '顺序', width: 82 },
+          { title: '学校 / 所在地', width: 285 },
+          { title: '院校代码 / 专业组', width: 190 },
+          { title: '2025 参考位次', width: 165 },
+          { title: '2026 计划', width: 125 },
+          { title: '重点查看', width: 315 },
+          { title: '宿舍 / 位置', width: 335 }
+        ];
+        const rows = sourceRows.map((row) => columns.map((_, index) => {
+          const cell = row.cells[index];
+          return String(cell?.innerText || '').trim().replace(/\n{2,}/g, '\n');
+        }));
+        const width = columns.reduce((sum, column) => sum + column.width, 0);
+        const fontFamily = '"Microsoft YaHei", "PingFang SC", sans-serif';
+        const bodyFont = `13px ${fontFamily}`;
+        const titleFont = `700 24px ${fontFamily}`;
+        const smallFont = `12px ${fontFamily}`;
+        const lineHeight = 22;
+        const padding = 14;
+        const measureCanvas = document.createElement('canvas');
+        const measureContext = measureCanvas.getContext('2d');
+        measureContext.font = bodyFont;
+
+        const wrapText = (text, maxWidth) => {
+          const output = [];
+          String(text || '').split('\n').forEach((part) => {
+            let line = '';
+            for (const character of Array.from(part || ' ')) {
+              const next = line + character;
+              if (line && measureContext.measureText(next).width > maxWidth) {
+                output.push(line);
+                line = character;
+              } else {
+                line = next;
+              }
+            }
+            output.push(line || '');
+          });
+          return output;
+        };
+
+        const wrappedRows = rows.map((row) => row.map((text, index) => wrapText(text, columns[index].width - padding * 2)));
+        const headerHeight = 106;
+        const tableHeaderHeight = 48;
+        const rowHeights = wrappedRows.map((row) => Math.max(72, Math.max(...row.map((lines) => lines.length)) * lineHeight + padding * 2));
+        const footerHeight = 46;
+        const height = headerHeight + tableHeaderHeight + rowHeights.reduce((sum, value) => sum + value, 0) + footerHeight;
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        const context = canvas.getContext('2d');
+        context.scale(scale, scale);
+        context.textBaseline = 'top';
+
+        const fill = (color, x, y, w, h) => {
+          context.fillStyle = color;
+          context.fillRect(x, y, w, h);
+        };
+        const stroke = (color, x, y, w, h) => {
+          context.strokeStyle = color;
+          context.strokeRect(x + .5, y + .5, w - 1, h - 1);
+        };
+        const drawWrapped = (lines, x, y, color, font) => {
+          context.fillStyle = color;
+          context.font = font;
+          lines.forEach((line, index) => context.fillText(line, x, y + index * lineHeight));
+        };
+
+        fill('#071015', 0, 0, width, height);
+        context.font = titleFont;
+        context.fillStyle = '#63e1df';
+        context.fillText('湖北历史类稳妥志愿专业组（概要）', 24, 20);
+        context.font = smallFont;
+        context.fillStyle = '#b7c9ce';
+        const selectedText = ['region-filter', 'focus-filter', 'band-filter'].map((id) => {
+          const select = $('#' + id);
+          return select.options[select.selectedIndex]?.textContent || '';
+        }).join(' · ');
+        context.fillText(`2025 参考位次 87109–90109 · 2026 招生计划 · ${selectedText}`, 24, 57);
+        context.fillStyle = '#81979d';
+        context.fillText('专业明细、专业代码、学费和学制请回到网页展开查看。', 24, 79);
+
+        let y = headerHeight;
+        fill('#101d24', 0, y, width, tableHeaderHeight);
+        stroke('#2b414a', 0, y, width, tableHeaderHeight);
+        let x = 0;
+        columns.forEach((column) => {
+          drawWrapped([column.title], x + padding, y + 15, '#d3e1e4', `700 13px ${fontFamily}`);
+          x += column.width;
+        });
+        y += tableHeaderHeight;
+
+        wrappedRows.forEach((row, rowIndex) => {
+          const source = sourceRows[rowIndex];
+          const background = source.dataset.focus === 'target' ? '#10282b' : source.dataset.focus === 'related' ? '#191d19' : '#0d171d';
+          fill(background, 0, y, width, rowHeights[rowIndex]);
+          stroke('#24343d', 0, y, width, rowHeights[rowIndex]);
+          x = 0;
+          row.forEach((lines, cellIndex) => {
+            const color = cellIndex === 0 ? '#63e1df' : cellIndex === 2 ? '#f1c56a' : cellIndex === 4 ? '#70d7a0' : cellIndex === 5 ? '#d8f0ee' : '#eef5f7';
+            drawWrapped(lines, x + padding, y + padding, color, bodyFont);
+            x += columns[cellIndex].width;
+          });
+          y += rowHeights[rowIndex];
+        });
+
+        fill('#0b1a1e', 0, y, width, footerHeight);
+        context.font = smallFont;
+        context.fillStyle = '#91a7ae';
+        context.fillText(`共 ${sourceRows.length} 个专业组 · 图片为筛选概要 · 生成时间 ${new Date().toLocaleString('zh-CN')}`, 24, y + 15);
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            $('#data-status').textContent = 'PNG 生成失败，请重试';
+            return;
+          }
+          const stamp = new Date();
+          const fileDate = [stamp.getFullYear(), String(stamp.getMonth() + 1).padStart(2, '0'), String(stamp.getDate()).padStart(2, '0')].join('');
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `湖北历史类稳妥志愿-${fileDate}.png`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+          const originalStatus = $('#data-status').textContent;
+          $('#data-status').textContent = `PNG 已生成：${sourceRows.length} 个专业组`;
+          setTimeout(() => { $('#data-status').textContent = originalStatus; }, 3500);
+        }, 'image/png');
+      };
+
       const init = async () => {
         try {
           const response = await fetch('data.json', { cache: 'no-store' });
@@ -787,6 +926,7 @@
           $('#band-filter').addEventListener('change', applyFilters);
           $('#expand-all').addEventListener('click', () => setAllDetails(true));
           $('#collapse-all').addEventListener('click', () => setAllDetails(false));
+          $('#export-png').addEventListener('click', exportPng);
         } catch (error) {
           $('#loading').textContent = `本地数据加载失败：${error.message}`;
           $('#data-status').textContent = '请通过本地服务器访问本页';
